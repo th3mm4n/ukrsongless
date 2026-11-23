@@ -297,7 +297,7 @@ This repo is built to be worked on with Claude (Claude Code or Claude chat). Con
 - [x] Full-song reveal on win and loss
 - [x] After a skip or wrong guess the first ▶ plays only the new part, later presses from the start
 - [x] Imported Tim's YouTube Music playlist "123" (653 tracks, 645 loaded; YouTube Music hides unavailable ones), sorted by the language of the song:
-  - **Ukrainian: 46 new songs added to the game** (20 more were already in it). 147 songs now, 141 on SoundCloud. Only Кульбаби (official upload is a 30s snip) and the 5 earlier ones stay on Deezer.
+  - **Ukrainian: 46 new songs added to the game** (20 more were already in it). 147 songs now, 141 on SoundCloud. All 45 new SoundCloud links (15 DRM) played in desktop Chrome; `start` offsets for 5 with silent intros. Only Кульбаби (official upload is a 30s snip) and the 5 earlier ones stay on Deezer.
   - Not added: Gogol Bordello - П'ята авеню and Qarpa - Виживи (not on Deezer), Борис Сичевський - Ти ж мене підманула (same song as the existing Підманула by Воплі Відоплясова; two versions would be confusing in a guessing game).
   - **Russian: 281 songs stored in `songs_ru.js`**, including Ukrainian artists who sing in Russian. Время и Стекло - Дим and АСАФАТОV - Заведу кота carry a `note`: language not confirmed. 3 without a Deezer id.
   - **English: 233 songs stored in `songs_en.js`.** 2 without a Deezer id (Adele - Hello is not on Deezer).
