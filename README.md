@@ -32,6 +32,7 @@ Open `index.html` in a browser (double-click is enough). Internet is required: c
 
 - **Goal:** recognise a song from the shortest possible clip.
 - **Loop:** play clip, type a guess (autocomplete over the known song list), submit or skip. Wrong or skipped means the next clip is longer. Six tries, then the answer is revealed.
+- **New part first:** right after a skip or wrong guess, the first ▶ plays only the newly unlocked part (e.g. 1s to 2s); every ▶ after that plays from the start (0 to 2s). The status line says so. Not saved across reloads: after a reload ▶ plays from the start.
 - **Audience:** people who know Ukrainian music. So the list is *iconic* songs most people recognise, not deep cuts.
 - **Modes:**
   - **Daily:** everyone gets the same song on a given day. Picked by a deterministic shuffle (seeded RNG) indexed by the date, so no server is needed. Result is kept in `localStorage`.
@@ -52,6 +53,7 @@ Files:
 | `tools/find_song.py` | Search Deezer, print paste-ready `songs.js` lines. |
 | `tools/verify_songs.py` | Check every song still resolves with a Deezer preview. |
 | `tools/verify_sc.py` | Check every `sc` link in headless Chrome: loads, full track (not a 30s snip), length vs Deezer, and a 1s play for non-DRM tracks. Needs Playwright. |
+| `tools/find_sc.py` | Find SoundCloud tracks for songs without `sc`, following the picking rules, and audio-match non-DRM candidates to the Deezer recording. Writes a JSON report; `--apply` adds the picks to `songs.js`. Needs Playwright, numpy, ffmpeg. |
 | `tools/sc_check.html` | Open in a real browser: plays the first second of every `sc` track (cold and buffered) and reports timing. The only way to verify DRM tracks. |
 
 Each round picks one of two audio engines:
@@ -220,7 +222,8 @@ Picking a SoundCloud track:
 - Search `https://soundcloud.com/search/sounds?q=<artist> <title>` in Cyrillic and Latin. Official artist accounts often have unusual slugs (`okieanielzi`, `skriabin-scmusic`, `bumboks-music`), so look at the uploader name, not the slug.
 - Prefer the official upload. Skip anything `SNIP` (`tools/verify_sc.py` flags it).
 - The length should be within a few seconds of the Deezer track (`verify_sc.py` warns at more than 8s). A big difference usually means a remix, live or radio edit.
-- For fan uploads, check it is the same recording. During this migration, the non-DRM picks were matched against the Deezer preview by correlating log spectrograms (same recording: r of 0.8-0.95, preview found ~48s in; different recording: ~0.4). The script was a one-off in the session; ask Claude to redo it if needed.
+- For fan uploads, check it is the same recording. `tools/find_sc.py` does this automatically for non-DRM candidates by correlating log spectrograms with the Deezer preview (same recording: r of 0.65-0.97, usually 0.8+; different recording: ~0.4). DRM candidates cannot be decoded in the sandbox, so they are only accepted when official and within 5s of the Deezer length.
+- `tools/find_sc.py` ranks: official (uploader name matches the artist, or a label-distributed `AD_SUPPORTED`/`MONETIZE` upload with the artist in the title) first, then closest length, then play count. It rejects titles with remix, live, cover, karaoke, sped up, nightcore and similar words.
 
 Deezer's metadata sometimes differs from what we show (for example "(Radio Edit)" suffixes). Show the clean title in `t`.
 
@@ -291,6 +294,7 @@ This repo is built to be worked on with Claude (Claude Code or Claude chat). Con
 
 - [x] SoundCloud widget support with optional `sc` and `start` fields, Deezer fallback
 - [x] Full-song reveal on win and loss
+- [x] After a skip or wrong guess the first ▶ plays only the new part, later presses from the start
 - [x] First 15 songs migrated to SoundCloud: Вставай, Обійми, Люди як кораблі, Вахтерам, Червона рута, Щедрик, Stefania, Shum, Wild Dances, 1944, Плакала, Човен, Весна, Журавлі, Dancing Lasha Tumbai
   - Official uploads: 11 (Shum is Go_A's official radio edit, 183s, not the 172s Eurovision cut, which is a 30s snip on SoundCloud. Щедрик is the official Хор Гомін recording, not the Viter recording that Deezer has.)
   - Fan uploads, matched to the Deezer recording: Wild Dances, 1944 (official is a 30s snip), Червона рута (no verified official account), Плакала (the only official upload is a 2022 re-recording)
@@ -298,7 +302,11 @@ This repo is built to be worked on with Claude (Claude Code or Claude chat). Con
 - [x] Verify the 9 DRM tracks in a real browser: all 15 OK in desktop Chrome (Windows)
 - [ ] Same check in Firefox, Safari and on a phone
 - [ ] Check on a phone whether the media notification or lock screen shows the song title during a clip
-- [ ] Migrate the remaining 95 songs to SoundCloud
+- [x] Remaining songs migrated with `tools/find_sc.py`: **105 of 110 songs now on SoundCloud** (64 DRM, 41 plain). All 105 played in desktop Chrome (Windows) with `tools/sc_check.html` logic; 4 failed once in a row and passed on a re-run, so a rare transient failure is possible (the game then falls back to Deezer).
+  - Fan uploads (official is a snip, missing, or a different version; all audio-matched to Deezer): Квіти в волоссі, Бета-каротин, Розпрягайте хлопці коней, Понад хмарами, Файне місто Тернопіль, Роксоляна, Чуєш мамо, Gravity, Ой у вишневому саду (plus the 4 from the first batch)
+  - Official but a different version from Deezer: У мене немає дому (230s vs 198s, 14s quiet intro, so `start: 13.7`), Два кольори (320s vs 273s), Shum, Stefania, Щедрик
+  - `start` offsets for silent intros: У мене немає дому, Молоком, Gravity, Не йди, Плакала, Гуцулка Ксеня, Три хвилини, Човен (measured on plain streams only; DRM tracks could not be measured)
+  - **Stay on Deezer, no usable upload:** Україно (Петриненко) and Стільникове кохання, Пливе кача (official uploads are 30s snips only), Свята (KAZKA: only remixes and an acoustic version), Ніч яка місячна (no Солов'яненко recording on SoundCloud)
 - [ ] Maybe: YouTube or Spotify embed as a reveal-only block for songs with no SoundCloud upload (YouTube needs GitHub Pages)
 - [ ] Difficulty tiers (very famous, well known)
 - [ ] Statistics and streaks
