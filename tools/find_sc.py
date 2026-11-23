@@ -14,11 +14,12 @@ Writes a JSON report; it does not edit songs.js. Apply picks with --apply REPORT
 Needs: playwright (+ Chrome; set CHROME=/path), numpy, ffmpeg.
 Usage:
   python3 tools/find_sc.py --out sc_report.json [title-substring ...]
-  python3 tools/find_sc.py --apply sc_report.json"""
+  python3 tools/find_sc.py --apply sc_report.json
+  add --file songs_ru.js (or songs_en.js) to work on a stored list instead of songs.js"""
 import asyncio, json, os, pathlib, re, subprocess, sys, tempfile, urllib.parse, urllib.request
 
 ROOT = pathlib.Path(__file__).parent.parent
-SONGS_JS = ROOT / "songs.js"
+SONGS_JS = ROOT / (sys.argv[sys.argv.index("--file") + 1] if "--file" in sys.argv else "songs.js")
 MATCH_OK = 0.65      # spectrogram correlation needed to call it the same recording
 MAX_LEN_DIFF = 8     # seconds vs Deezer
 BAD_WORDS = r"remix|ремікс|ремикс|rmx|live|наживо|концерт|cover|кавер|karaoke|караоке|instrumental|мінус|минус|minus|speed ?up|sped|slowed|nightcore|8d|bass ?boost|mashup|мешап|acoustic|акустик|piano|orchestra version|версия|tribute|reprise|demo|intro|outro|vip"
@@ -184,10 +185,10 @@ async def process(song, browser, page, probe_uri, work):
 async def main(argv):
     from playwright.async_api import async_playwright
     out = argv[argv.index("--out") + 1] if "--out" in argv else "sc_report.json"
-    filt = [a for i, a in enumerate(argv) if a != "--out" and (i == 0 or argv[i-1] != "--out")]
+    filt = [a for i, a in enumerate(argv) if a not in ("--out", "--file") and (i == 0 or argv[i-1] not in ("--out", "--file"))]
     src = SONGS_JS.read_text(encoding="utf-8")
-    songs = json.loads(re.search(r"const SONGS = (\[.*\]);", src, re.S).group(1))
-    todo = [s for s in songs if not s.get("sc") and (not filt or any(f.lower() in (s["t"] + " " + s["a"]).lower() for f in filt))]
+    songs = json.loads(re.search(r"const SONGS\w* = (\[.*\]);", src, re.S).group(1))
+    todo = [s for s in songs if not s.get("sc") and s.get("id") and (not filt or any(f.lower() in (s["t"] + " " + s["a"]).lower() for f in filt))]
     work = pathlib.Path(tempfile.mkdtemp()); probe = work / "probe.html"; probe.write_text(PROBE, encoding="utf-8")
     report = json.load(open(out)) if os.path.exists(out) else {}
     async with async_playwright() as p:
@@ -209,7 +210,7 @@ def apply(path):
     report = json.load(open(path)); src = SONGS_JS.read_text(encoding="utf-8"); n = 0
     for k, rep in report.items():
         if not rep.get("pick") or rep.get("skip"): continue
-        line = re.search(r'\{"id": %s,[^\n]*\}' % k, src)
+        line = re.search(r'\{"id": %s,[^\n]*\}' % re.escape(k), src)
         if not line or '"sc"' in line.group(0): continue
         src = src.replace(line.group(0), line.group(0)[:-1] + ', "sc": "%s"}' % rep["pick"]["url"]); n += 1
     SONGS_JS.write_text(src, encoding="utf-8"); print("applied", n)
