@@ -4,6 +4,7 @@ Read `README.md` first. It explains the concept, the audio source options and th
 
 Short version:
 - Static browser game: `index.html` (all logic) plus `songs.js` (data). No build step, no dependencies, must work from `file://`.
+- Only songs with an `sc` field are picked as answers (`PLAYABLE`), so clips always start at the beginning. Songs without `sc` stay in `SONGS` for the guess search. If a SoundCloud track fails, the game takes another song (daily: next in today's order, `shift` saved in the daily state). Tim does not want Deezer previews played: they start mid-song.
 - Audio: songs with an `sc` field (SoundCloud track page URL, optional `start` offset in seconds) play clips from the start of the full track through a hidden SoundCloud widget, and the widget plays the whole song on the reveal. Songs without `sc`, or whose SoundCloud track fails, use Deezer 30s previews via JSONP.
 - Never store expiring URLs (Deezer preview URLs, SoundCloud stream URLs). Only Deezer track IDs and SoundCloud track page URLs.
 - After editing `songs.js`, run `python3 tools/verify_songs.py` (needs internet) and make sure every line is OK. When `sc` links change, also run `python3 tools/verify_sc.py` (Playwright; set `CHROME=/usr/bin/google-chrome` in the sandbox).

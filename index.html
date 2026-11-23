@@ -259,11 +259,15 @@ function dayInfo(){
   const dayNum = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
   return { key, dayNum };
 }
-function dailySong(){
-  const order = SONGS.map((_, i) => i), r = rng(20260101);
+// Only songs with a SoundCloud link are picked as answers, so every clip starts at the beginning of the song.
+// Songs without one stay in SONGS for the guess search.
+const PLAYABLE = SONGS.filter(s => s.sc);
+// shift: how many songs were skipped today because their SoundCloud link did not play
+function dailySong(shift){
+  const order = PLAYABLE.map((_, i) => i), r = rng(20260101);
   for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
-  const { dayNum } = dayInfo();
-  return SONGS[order[((dayNum % order.length) + order.length) % order.length]];
+  const { dayNum } = dayInfo(), n = order.length;
+  return PLAYABLE[order[(((dayNum + (shift || 0)) % n) + n) % n]];
 }
 
 /* ---------- state ---------- */
@@ -271,7 +275,7 @@ const $ = id => document.getElementById(id);
 const audio = new Audio(); audio.preload = "auto";
 let mode = "daily", target = null, previewUrl = null, guesses = [], done = false, won = false, selected = null, raf = 0, recent = [];
 // engine: "sc" (SoundCloud widget) or "dz" (Deezer preview) for the current round, null while loading
-let engine = null, scw = null, scSound = null, roundId = 0, scWait = 0, newFrom = 0;
+let engine = null, scw = null, scSound = null, roundId = 0, scWait = 0, newFrom = 0, dailyShift = 0;
 const fmtSec = x => String(x).replace(".", ",");
 let scSt = { mode: "idle", startMs: 0, fromMs: 0, limit: 0, armed: false, seen: null, warmed: false, t: 0, at: 0 };
 
@@ -375,13 +379,21 @@ function scClip(seconds, from){
   };
   tick();
 }
-// SoundCloud loaded but does not play (DRM unsupported, ad, region block...): switch this round to Deezer.
-async function scFail(){
+// The SoundCloud track does not play (deleted, region block, DRM unsupported...). No Deezer preview: it starts
+// mid-song. Take another song instead (daily: the next one in today's order, guesses reset).
+let skipped = 0;
+function scFail(){ skipSong(); }
+function skipSong(){
   stop(); engine = null; scw = null; $("scBox").innerHTML = ""; $("play").disabled = true;
-  setStatus("SoundCloud не відтворює цю пісню, вмикаю прев'ю Deezer…", true);
-  const rid = roundId;
-  try { await useDeezer(target, rid); if (rid === roundId) setStatus("Натисни ▶ ще раз (прев'ю Deezer)."); }
-  catch (e) { if (rid === roundId) setStatus("Не вдалося завантажити фрагмент (потрібен інтернет).", true); }
+  if (++skipped > 5) {
+    setStatus("SoundCloud не відповідає (потрібен інтернет). ", true);
+    const b = document.createElement("a"); b.href = "#"; b.textContent = "Спробувати ще раз";
+    b.style.color = "var(--yellow)"; b.onclick = ev => { ev.preventDefault(); skipped = 0; startRound(); };
+    $("status").appendChild(b); return;
+  }
+  setStatus("Ця пісня зараз не грає, беремо іншу…", true);
+  if (mode === "daily") { dailyShift++; guesses = []; done = false; won = false; persist(); }
+  setTimeout(startRound, 900);
 }
 async function useDeezer(song, rid){
   const url = await getPreview(song);
@@ -416,7 +428,7 @@ $("full").onclick = () => {
 };
 
 /* ---------- game flow ---------- */
-function persist(){ if (mode === "daily") store(dailyKey(), { guesses, done, won }); }
+function persist(){ if (mode === "daily") store(dailyKey(), { guesses, done, won, shift: dailyShift }); }
 // finish() always runs from a click (guess or give up), so the reveal may start playing with sound.
 function finish(w){ done = true; won = w; stop(); setStatus(""); persist(); renderAll(); if (engine === "sc") scFull(true); }
 function addGuess(g){
@@ -492,22 +504,24 @@ async function startRound(){
   engine = null; scw = null; scSound = null; $("scBox").innerHTML = ""; $("scBox").classList.remove("show");
   previewUrl = null; newFrom = 0; $("play").disabled = true; setStatus("Завантаження фрагмента…");
   if (mode === "daily") {
-    target = dailySong();
     const saved = store(dailyKey());
+    dailyShift = (saved && saved.shift) || 0;
+    target = dailySong(dailyShift);
     guesses = saved && saved.guesses ? saved.guesses : []; done = !!(saved && saved.done); won = !!(saved && saved.won);
   } else {
-    let pool = SONGS.filter(s => !recent.includes(s.id));
-    if (!pool.length) { recent = []; pool = SONGS; }
+    let pool = PLAYABLE.filter(s => !recent.includes(s.id));
+    if (!pool.length) { recent = []; pool = PLAYABLE; }
     target = pool[Math.floor(Math.random() * pool.length)];
     recent.push(target.id); if (recent.length > 30) recent.shift();
     guesses = []; done = false; won = false;
   }
   renderAll();
   const mine = target;
-  if (mine.sc) {
+  {
     try {
       const r = await scLoad(mine, rid);
       if (rid !== roundId) return;
+      skipped = 0;
       scw = r.widget; scSound = r.sound; engine = "sc";
       scSt = { mode: "idle", startMs: Math.round((mine.start || 0) * 1000), fromMs: 0, limit: 0, armed: false, seen: null, warmed: false, t: 0, at: 0 };
       $("play").disabled = false; renderResult();
@@ -517,20 +531,11 @@ async function startRound(){
       return;
     } catch (e) {
       if (rid !== roundId) return;
-      console.warn("SoundCloud unavailable for", mine.t, "-", e.message, "- using Deezer");
+      console.warn("SoundCloud unavailable for", mine.t, "-", e.message);
       $("scBox").innerHTML = "";
+      // a finished daily round just shows the result; otherwise take another song
+      if (done) { setStatus(""); renderResult(); } else skipSong();
     }
-  }
-  try {
-    await useDeezer(mine, rid);
-    if (rid !== roundId) return;
-    setStatus(done ? "" : "Натисни ▶ і слухай.");
-  } catch (e) {
-    if (rid !== roundId) return;
-    setStatus("Не вдалося завантажити фрагмент (потрібен інтернет). ", true);
-    const b = document.createElement("a"); b.href = "#"; b.textContent = "Спробувати ще раз";
-    b.style.color = "var(--yellow)"; b.onclick = ev => { ev.preventDefault(); startRound(); };
-    $("status").appendChild(b);
   }
 }
 $("next").onclick = startRound;
