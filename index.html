@@ -158,8 +158,10 @@ function search(q){
   for (const s of SONGS) {
     if (s.key.includes(a) || s.key.includes(b)) out.push(s);
   }
-  out.sort((x, y) => (norm(x.t).startsWith(a) ? 0 : 1) - (norm(y.t).startsWith(a) ? 0 : 1));
-  return out.slice(0, 8);
+  // titles starting with the query first, then alphabetical; show every match (the list scrolls),
+  // so typing an artist with many songs (Скрябін has ~30) lists all of them
+  out.sort((x, y) => ((norm(x.t).startsWith(a) ? 0 : 1) - (norm(y.t).startsWith(a) ? 0 : 1)) || x.t.localeCompare(y.t, "uk"));
+  return out;
 }
 
 /* ---------- deezer preview (JSONP, works from a local file) ---------- */
