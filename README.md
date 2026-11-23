@@ -53,6 +53,7 @@ Files:
 | `tools/find_song.py` | Search Deezer, print paste-ready `songs.js` lines. |
 | `tools/verify_songs.py` | Check every song still resolves with a Deezer preview. |
 | `tools/verify_sc.py` | Check every `sc` link in headless Chrome: loads, full track (not a 30s snip), length vs Deezer, and a 1s play for non-DRM tracks. Needs Playwright. |
+| `songs_ru.js`, `songs_en.js` | Russian- and English-language songs (`SONGS_RU`, `SONGS_EN`), same format as `songs.js`. **Not loaded by the game.** Stored for a planned language mode: Ukrainian, Russian, English or a mix. `id` is null for the few tracks not on Deezer; no SoundCloud links yet. |
 | `tools/find_sc.py` | Find SoundCloud tracks for songs without `sc`, following the picking rules, and audio-match non-DRM candidates to the Deezer recording. Writes a JSON report; `--apply` adds the picks to `songs.js`. Needs Playwright, numpy, ffmpeg. |
 | `tools/sc_check.html` | Open in a real browser: plays the first second of every `sc` track (cold and buffered) and reports timing. The only way to verify DRM tracks. |
 
@@ -295,6 +296,14 @@ This repo is built to be worked on with Claude (Claude Code or Claude chat). Con
 - [x] SoundCloud widget support with optional `sc` and `start` fields, Deezer fallback
 - [x] Full-song reveal on win and loss
 - [x] After a skip or wrong guess the first ▶ plays only the new part, later presses from the start
+- [x] Imported Tim's YouTube Music playlist "123" (653 tracks, 645 loaded; YouTube Music hides unavailable ones), sorted by the language of the song:
+  - **Ukrainian: 46 new songs added to the game** (20 more were already in it). 147 songs now, 141 on SoundCloud. Only Кульбаби (official upload is a 30s snip) and the 5 earlier ones stay on Deezer.
+  - Not added: Gogol Bordello - П'ята авеню and Qarpa - Виживи (not on Deezer), Борис Сичевський - Ти ж мене підманула (same song as the existing Підманула by Воплі Відоплясова; two versions would be confusing in a guessing game).
+  - **Russian: 281 songs stored in `songs_ru.js`**, including Ukrainian artists who sing in Russian. Время и Стекло - Дим and АСАФАТОV - Заведу кота carry a `note`: language not confirmed. 3 without a Deezer id.
+  - **English: 233 songs stored in `songs_en.js`.** 2 without a Deezer id (Adele - Hello is not on Deezer).
+  - Not stored: 39 tracks in other languages or instrumentals (Rammstein, Stromae, PSY, Shakira, Daft-Punk-style instrumentals, etc.).
+  - Ukrainian-language songs from the playlist are added even when less famous: they are Tim's picks.
+- [ ] Language mode: let the player choose Ukrainian, Russian, English or a mix (data is ready in `songs_ru.js` and `songs_en.js`; add SoundCloud links with `tools/find_sc.py` first)
 - [x] Removed on request (Nov 2026): Wild Dances, 1944, Фортеця Бахмут, Heart of Steel, Gravity, Under the Ladder, Чуєш мамо, Стожари, Прірва. Do not re-add them.
 - [x] First 15 songs migrated to SoundCloud: Вставай, Обійми, Люди як кораблі, Вахтерам, Червона рута, Щедрик, Stefania, Shum, Wild Dances, 1944, Плакала, Човен, Весна, Журавлі, Dancing Lasha Tumbai
   - Official uploads: 11 (Shum is Go_A's official radio edit, 183s, not the 172s Eurovision cut, which is a 30s snip on SoundCloud. Щедрик is the official Хор Гомін recording, not the Viter recording that Deezer has.)
