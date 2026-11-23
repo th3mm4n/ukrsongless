@@ -38,6 +38,7 @@ h1 span{display:inline-block;width:18px;height:12px;vertical-align:-1px;margin-r
 .slot.wrong{color:var(--text);border-color:#5a2a35;background:rgba(239,91,91,.1)}
 .slot.skip{color:var(--muted);border-style:dashed}
 .slot.right{color:var(--text);border-color:#1d6b4d;background:rgba(62,207,142,.12)}
+.slot.artist{color:var(--text);border-color:#8a7419;background:rgba(255,210,63,.18)}
 .guess{position:relative}
 .guess input{width:100%;height:46px;border-radius:10px;border:1px solid var(--line);background:#0c1424;color:var(--text);padding:0 14px;font:inherit;font-size:15px;outline:none}
 .guess input:focus{border-color:var(--blue)}
@@ -299,6 +300,7 @@ function renderSlots(){
     if (g) {
       if (g.skip) { d.classList.add("skip"); d.textContent = "Пропущено"; }
       else if (g.right) { d.classList.add("right"); d.textContent = "✓ " + g.label; }
+      else if (g.artist) { d.classList.add("artist"); d.textContent = "≈ " + g.label; }
       else { d.classList.add("wrong"); d.textContent = "✗ " + g.label; }
     } else if (i === guesses.length && !done) d.classList.add("cur");
     box.appendChild(d);
@@ -421,13 +423,17 @@ function addGuess(g){
   if (guesses.length >= MAX) { finish(false); return; }
   newFrom = CLIPS[stage() - 1];
   persist(); renderAll();
-  setStatus("▶ зіграє нову частину (" + fmtSec(newFrom) + "–" + fmtSec(CLIPS[stage()]) + " с), далі ▶ грає з початку.");
+  setStatus((g.artist ? "Виконавець правильний, пісня ні. " : "") + "▶ зіграє нову частину (" + fmtSec(newFrom) + "–" + fmtSec(CLIPS[stage()]) + " с), далі ▶ грає з початку.");
 }
 $("skip").onclick = () => { if (!done && engine) addGuess({ skip: true }); };
 $("submit").onclick = submitGuess;
+// Right artist, wrong song: any shared artist counts (collabs like "СТРУКТУРА ЩАСТЯ & SadSvit" match "SadSvit").
+function artistParts(s){ return (s.a + " & " + (s.al || "")).split(/\s*(?:&|,|\bfeat\.?|\bft\.?|\bx\b)\s*/i).map(norm).filter(x => x.length > 1); }
+function sameArtist(a, b){ const pb = artistParts(b); return artistParts(a).some(x => pb.includes(x)); }
 function submitGuess(){
   if (!selected || done) return;
-  addGuess({ label: selected.t + " — " + selected.a, right: selected.id === target.id });
+  const right = selected.id === target.id;
+  addGuess({ label: selected.t + " — " + selected.a, right, artist: !right && sameArtist(selected, target) });
   selected = null; $("q").value = ""; $("submit").disabled = true; hideList();
 }
 
@@ -466,7 +472,7 @@ $("q").addEventListener("keydown", e => {
 
 /* share */
 $("share").onclick = async () => {
-  const sq = guesses.map(g => g.right ? "🟩" : g.skip ? "⬛" : "🟥").join("");
+  const sq = guesses.map(g => g.right ? "🟩" : g.skip ? "⬛" : g.artist ? "🟨" : "🟥").join("");
   const head = mode === "daily" ? "Впізнай пісню · " + dayInfo().key : "Впізнай пісню";
   const txt = head + "\n" + (won ? guesses.length + "/" + MAX : "X/" + MAX) + " " + sq;
   let ok = false;

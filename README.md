@@ -32,6 +32,7 @@ Open `index.html` in a browser (double-click is enough). Internet is required: c
 
 - **Goal:** recognise a song from the shortest possible clip.
 - **Loop:** play clip, type a guess (autocomplete over the known song list), submit or skip. Wrong or skipped means the next clip is longer. Six tries, then the answer is revealed.
+- **Right artist:** a wrong guess by the same artist (any shared artist in a collab) shows as a yellow slot marked ≈, with the status line "Виконавець правильний, пісня ні." Share text uses 🟨 for it.
 - **New part first:** right after a skip or wrong guess, the first ▶ plays only the newly unlocked part (e.g. 1s to 2s); every ▶ after that plays from the start (0 to 2s). The status line says so. Not saved across reloads: after a reload ▶ plays from the start.
 - **Audience:** people who know Ukrainian music. So the list is *iconic* songs most people recognise, not deep cuts.
 - **Modes:**
