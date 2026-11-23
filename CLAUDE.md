@@ -12,4 +12,6 @@ Short version:
 - Gameplay rule: after a skip or wrong guess, the first ▶ plays only the newly unlocked part (previous clip end to new clip end); later presses play from the start. Keep this when touching playback.
 - The SoundCloud iframe must keep `allow="autoplay; encrypted-media"`.
 - Test the page with headless Chrome or Playwright on `file://`.
-- UI text stays in Ukrainian. Songs must be iconic, widely known, Ukrainian-language.
+- UI text stays in Ukrainian. Songs in `songs.js` must be Ukrainian-language. Tim's own picks (e.g. from his playlists) are added even if less famous.
+- `songs_ru.js` (`SONGS_RU`) and `songs_en.js` (`SONGS_EN`) store Russian- and English-language songs for a planned language mode (Ukrainian / Russian / English / mix). They are NOT loaded by `index.html`; never add them to the game unless Tim asks. Same format as `songs.js`; `id` may be null when a track is not on Deezer.
+- Workflow: commit and push to GitHub after every change (each step, not only at the end). Work on the open PR branch, never push to main.
