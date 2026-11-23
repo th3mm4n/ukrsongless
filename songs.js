@@ -106,7 +106,7 @@ const SONGS = [
  {"id": 3068646901, "t": "Цвіте терен", "a": "Ірина Білик", "al": "Iryna Bilyk", "sc": "https://soundcloud.com/irinabilik/czvite-teren"},
  {"id": 583030722, "t": "Рабів до раю не пускають", "a": "Хорта", "al": "Khorta", "sc": "https://soundcloud.com/dub-bog-1/szohxpu62kss"},
  {"id": 81630612, "t": "Восьмий колір", "a": "Мотор'Ролла", "al": "Motor'Rolla", "sc": "https://soundcloud.com/motorrolla-music/8-1"},
- {"id": 137639227, "t": "Так гріє", "a": "Валентин Стрикало", "al": "Valentyn Strykalo", "sc": "https://soundcloud.com/valentin_strykalo/tak_hriye"},
+ {"id": 137639227, "t": "Так гріє", "a": "Валентин Стрикало", "al": "Valentyn Strykalo", "sc": "https://soundcloud.com/valentin_strykalo/tak_hriye", "start": 1.0},
  {"id": 141186337, "t": "Віддаю", "a": "Бумбокс", "al": "Boombox", "sc": "https://soundcloud.com/skazo4nik_mr/bumboks-viddayu"},
  {"id": 106105568, "t": "Зелені очі", "a": "Океан Ельзи", "al": "Okean Elzy", "sc": "https://soundcloud.com/okieanielzi/zeleni-ochi"},
  {"id": 746082872, "t": "Кобзон", "a": "Жадан і Собаки", "al": "Zhadan i Sobaky", "sc": "https://soundcloud.com/zhadansobaki/nknyblzzcqxq"},
@@ -123,8 +123,8 @@ const SONGS = [
  {"id": 1662388672, "t": "Персонажі", "a": "SadSvit", "al": "SadSvit", "sc": "https://soundcloud.com/sadsvit/personazh"},
  {"id": 746082912, "t": "Мальви", "a": "Жадан і Собаки", "al": "Zhadan i Sobaky", "sc": "https://soundcloud.com/zhadansobaki/ltkvn3phtj1n"},
  {"id": 2892634492, "t": "ЧУЖІЮ Я", "a": "NAZVA & BRYKULETS", "al": "NAZVA & BRYKULETS", "sc": "https://soundcloud.com/nazva-music/chuzhiyu-ya"},
- {"id": 601664312, "t": "Мексиканець", "a": "Zwyntar", "al": "Zwyntar", "sc": "https://soundcloud.com/61ixaswwzbfn/zwyntar-meksikanecz"},
- {"id": 3067043511, "t": "Не довіряй смертним", "a": "Zwyntar", "al": "Zwyntar", "sc": "https://soundcloud.com/user-149965503/zwyntar-ne-doviryaj-smertnim"},
+ {"id": 601664312, "t": "Мексиканець", "a": "Zwyntar", "al": "Zwyntar", "sc": "https://soundcloud.com/61ixaswwzbfn/zwyntar-meksikanecz", "start": 0.9},
+ {"id": 3067043511, "t": "Не довіряй смертним", "a": "Zwyntar", "al": "Zwyntar", "sc": "https://soundcloud.com/user-149965503/zwyntar-ne-doviryaj-smertnim", "start": 1.0},
  {"id": 7040243, "t": "Вчителька", "a": "ТІК", "al": "TIK", "sc": "https://soundcloud.com/tik-band/znpnbcksahje"},
  {"id": 3111777681, "t": "DVD", "a": "Shmiska", "al": "Shmiska", "sc": "https://soundcloud.com/user-642270107/dvd-2"},
  {"id": 740099102, "t": "Я Міліонер", "a": "DZIDZIO", "al": "DZIDZIO", "sc": "https://soundcloud.com/dzidzioofficial/w2yw5mk8qfk1"},
@@ -132,7 +132,7 @@ const SONGS = [
  {"id": 14170718, "t": "Сірьожине пірожене", "a": "ТІК", "al": "TIK", "sc": "https://soundcloud.com/tik75278/sirozhine-pirozhene"},
  {"id": 2113690087, "t": "Шибеник", "a": "Харцизи", "al": "Khartsyzy", "sc": "https://soundcloud.com/hartsyzy/oilzcyqchaii"},
  {"id": 91942496, "t": "Василина", "a": "DZIDZIO", "al": "DZIDZIO", "sc": "https://soundcloud.com/pwlgafjqf3rk/fajna-vasilina-dzidzio"},
- {"id": 746082862, "t": "Троєщина", "a": "Жадан і Собаки", "al": "Zhadan i Sobaky", "sc": "https://soundcloud.com/zhadansobaki/b9vmm6d98ugc"},
+ {"id": 746082862, "t": "Троєщина", "a": "Жадан і Собаки", "al": "Zhadan i Sobaky", "sc": "https://soundcloud.com/zhadansobaki/b9vmm6d98ugc", "start": 0.9},
  {"id": 2055020317, "t": "Кульбаби", "a": "Тоня Матвієнко", "al": "Tonia Matviienko"},
  {"id": 7040245, "t": "Алкоголізм", "a": "ТІК", "al": "TIK", "sc": "https://soundcloud.com/tik103400/alkogolizm"},
  {"id": 2453710835, "t": "Рогань", "a": "Жадан і Собаки", "al": "Zhadan i Sobaky", "sc": "https://soundcloud.com/timur-kuzmenko-560565269/zhadan-i-sobaki-rogan"},
@@ -149,5 +149,5 @@ const SONGS = [
  {"id": 91637086, "t": "Ялта", "a": "DZIDZIO", "al": "DZIDZIO", "sc": "https://soundcloud.com/sandykit/dzidzio-yalta-right-version"},
  {"id": 3355791071, "t": "Смарагдове небо", "a": "Drevo", "al": "Drevo", "sc": "https://soundcloud.com/drevo-sc/smaragdove-nebo"},
  {"id": 2656172492, "t": "пайка стайл", "a": "jockii druce", "al": "jockii druce", "sc": "https://soundcloud.com/joskiidruce/payka-stayl"},
- {"id": 2656172462, "t": "бути долбайобом", "a": "jockii druce", "al": "jockii druce", "sc": "https://soundcloud.com/joskiidruce/buti-dolbayobom"}
+ {"id": 2656172462, "t": "бути долбайобом", "a": "jockii druce", "al": "jockii druce", "sc": "https://soundcloud.com/joskiidruce/buti-dolbayobom", "start": 2.9}
 ];
