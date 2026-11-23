@@ -231,7 +231,7 @@ function scProgress(pos){
   if (!s.armed) {
     // ignore stale events from before the seek, and only arm once the position actually advances
     // (a stream that fails to decode reports the start position and never moves)
-    if (pos < s.startMs - 300 || pos > s.startMs + 600) return;
+    if (pos < s.fromMs - 300 || pos > s.fromMs + 600) return;
     if (s.seen === null || pos <= s.seen) { s.seen = pos; return; }
     s.armed = true; s.warmed = true;
     if ($("status").textContent === "Буферизація…") setStatus("");
@@ -268,8 +268,9 @@ const $ = id => document.getElementById(id);
 const audio = new Audio(); audio.preload = "auto";
 let mode = "daily", target = null, previewUrl = null, guesses = [], done = false, won = false, selected = null, raf = 0, recent = [];
 // engine: "sc" (SoundCloud widget) or "dz" (Deezer preview) for the current round, null while loading
-let engine = null, scw = null, scSound = null, roundId = 0, scWait = 0;
-let scSt = { mode: "idle", startMs: 0, limit: 0, armed: false, seen: null, warmed: false, t: 0, at: 0 };
+let engine = null, scw = null, scSound = null, roundId = 0, scWait = 0, newFrom = 0;
+const fmtSec = x => String(x).replace(".", ",");
+let scSt = { mode: "idle", startMs: 0, fromMs: 0, limit: 0, armed: false, seen: null, warmed: false, t: 0, at: 0 };
 
 function store(k, v){ try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
 const dailyKey = () => "ua-songless-daily-" + dayInfo().key;
@@ -328,12 +329,15 @@ function stop(){
   if (engine === "sc" && scw && (scSt.mode === "clip" || scSt.mode === "full")) { scw.pause(); scSt.mode = "idle"; }
   audio.pause(); $("head").style.display = "none"; $("play").textContent = "▶";
 }
-function playClip(seconds){
-  if (engine === "sc") { scClip(seconds); return; }
+// from: where the clip starts, in seconds of the clip ladder (0 = from the start, or the previous
+// clip's end right after a skip or wrong guess, so only the newly unlocked part plays)
+function playClip(seconds, from){
+  from = from || 0;
+  if (engine === "sc") { scClip(seconds, from); return; }
   if (!previewUrl) return;
   stop();
   const total = Math.sqrt(30), head = $("head"), track = $("track");
-  audio.currentTime = 0;
+  audio.currentTime = from;
   audio.play().then(() => {
     $("play").textContent = "■"; head.style.display = "block";
     const tick = () => {
@@ -345,11 +349,12 @@ function playClip(seconds){
     tick();
   }).catch(() => setStatus("Браузер не дозволив відтворення. Натисни ▶ ще раз.", true));
 }
-function scClip(seconds){
+function scClip(seconds, from){
   stop();
   const s = scSt, rid = roundId, total = Math.sqrt(30), head = $("head");
-  s.mode = "clip"; s.limit = seconds; s.armed = false; s.seen = null; s.t = 0; s.at = 0;
-  scw.setVolume(100); scw.seekTo(s.startMs); scw.play();
+  s.mode = "clip"; s.limit = seconds; s.armed = false; s.seen = null; s.t = from; s.at = 0;
+  s.fromMs = s.startMs + Math.round(from * 1000);
+  scw.setVolume(100); scw.seekTo(s.fromMs); scw.play();
   $("play").textContent = "■";
   const busy = setTimeout(() => { if (rid === roundId && s.mode === "clip" && !s.armed) setStatus("Буферизація…"); }, 700);
   scWait = setTimeout(() => { if (rid === roundId && s.mode === "clip" && !s.armed) scFail(); }, s.suspect ? 3000 : 9000);
@@ -391,13 +396,15 @@ function syncFullBtn(playing){
   if (engine === "sc" && done) { $("full").textContent = playing ? "⏸ Пауза" : "▶ Уся пісня"; $("play").textContent = playing ? "■" : "▶"; }
 }
 function toggleFull(){ scw.isPaused(p => { if (p) scFull(false); else { scw.pause(); scSt.mode = "idle"; } }); }
+// The first press after unlocking a longer clip plays only the new part; later presses play from the start.
+function playNext(){ const from = newFrom; newFrom = 0; playClip(CLIPS[stage()], from); }
 $("play").onclick = () => {
   if (engine === "sc") {
     if (done) toggleFull();
-    else if (scSt.mode === "clip") stop(); else playClip(CLIPS[stage()]);
+    else if (scSt.mode === "clip") stop(); else playNext();
     return;
   }
-  if (audio.paused) playClip(done ? 30 : CLIPS[stage()]); else stop();
+  if (!audio.paused) stop(); else if (done) playClip(30); else playNext();
 };
 $("full").onclick = () => {
   if (engine === "sc") { toggleFull(); return; }
@@ -412,8 +419,9 @@ function addGuess(g){
   guesses.push(g);
   if (g.right) { finish(true); return; }
   if (guesses.length >= MAX) { finish(false); return; }
+  newFrom = CLIPS[stage() - 1];
   persist(); renderAll();
-  setStatus("Знову ▶ з довшим фрагментом.");
+  setStatus("▶ зіграє нову частину (" + fmtSec(newFrom) + "–" + fmtSec(CLIPS[stage()]) + " с), далі ▶ грає з початку.");
 }
 $("skip").onclick = () => { if (!done && engine) addGuess({ skip: true }); };
 $("submit").onclick = submitGuess;
@@ -474,7 +482,7 @@ async function startRound(){
   stop(); selected = null; $("q").value = ""; $("submit").disabled = true; hideList();
   const rid = ++roundId;
   engine = null; scw = null; scSound = null; $("scBox").innerHTML = ""; $("scBox").classList.remove("show");
-  previewUrl = null; $("play").disabled = true; setStatus("Завантаження фрагмента…");
+  previewUrl = null; newFrom = 0; $("play").disabled = true; setStatus("Завантаження фрагмента…");
   if (mode === "daily") {
     target = dailySong();
     const saved = store(dailyKey());
@@ -493,7 +501,7 @@ async function startRound(){
       const r = await scLoad(mine, rid);
       if (rid !== roundId) return;
       scw = r.widget; scSound = r.sound; engine = "sc";
-      scSt = { mode: "idle", startMs: Math.round((mine.start || 0) * 1000), limit: 0, armed: false, seen: null, warmed: false, t: 0, at: 0 };
+      scSt = { mode: "idle", startMs: Math.round((mine.start || 0) * 1000), fromMs: 0, limit: 0, armed: false, seen: null, warmed: false, t: 0, at: 0 };
       $("play").disabled = false; renderResult();
       setStatus(done ? "" : "Натисни ▶ і слухай.");
       // pre-buffer now if the browser already allows sound (after any earlier tap), otherwise on the next tap
