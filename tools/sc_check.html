@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SoundCloud check · ukrsongless</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0c1424;color:#eef2fb;margin:20px;font-size:14px}
+button{font:inherit;padding:8px 14px;border-radius:8px;border:0;background:#2f6fe4;color:#fff;cursor:pointer}
+button:disabled{opacity:.5}
+table{border-collapse:collapse;margin-top:14px;width:100%}
+td,th{border-bottom:1px solid #25365a;padding:6px 8px;text-align:left;vertical-align:top}
+.ok{color:#3ecf8e}.bad{color:#ef5b5b}.warn{color:#ffd23f}.muted{color:#8b9bbd}
+#box iframe{width:100%;max-width:520px;height:166px;border:0;margin-top:12px}
+</style>
+</head>
+<body>
+<h2>SoundCloud check</h2>
+<p class="muted">Developer tool. Open this file in a normal browser (Chrome, Firefox, Safari; also try your phone) and press the button.
+For every song in <code>songs.js</code> with an <code>sc</code> link it loads the widget, plays the first second twice (cold, then buffered) and reports timing.
+You will hear each clip: also check by ear that it is the right song and that the start sounds right (set <code>start</code> to skip a silent intro).
+Headless Chrome in the Claude sandbox cannot play DRM streams, so this page is how the official (DRM) uploads get verified.</p>
+<button id="run">Run check</button> <span id="sum" class="muted"></span>
+<div id="box"></div>
+<table><thead><tr><th>#</th><th>Song</th><th>Track</th><th>Cold start</th><th>Warm start</th><th>Stopped at</th><th>Result</th></tr></thead><tbody id="rows"></tbody></table>
+
+<script src="../songs.js"></script>
+<script src="https://w.soundcloud.com/player/api.js"></script>
+<script>
+const list = SONGS.filter(s => s.sc);
+const rows = document.getElementById("rows"), box = document.getElementById("box");
+document.getElementById("sum").textContent = list.length + " songs with sc";
+
+function td(tr, txt, cls){ const c = document.createElement("td"); c.textContent = txt; if (cls) c.className = cls; tr.appendChild(c); return c; }
+
+function load(song){
+  return new Promise((res, rej) => {
+    box.innerHTML = "";
+    const f = document.createElement("iframe");
+    f.allow = "autoplay; encrypted-media";
+    f.src = "https://w.soundcloud.com/player/?auto_play=false&visual=false&url=" + encodeURIComponent(song.sc);
+    box.appendChild(f);
+    const w = SC.Widget(f), t = setTimeout(() => rej(new Error("widget did not load")), 15000);
+    w.bind(SC.Widget.Events.ERROR, () => { clearTimeout(t); rej(new Error("widget error")); });
+    w.bind(SC.Widget.Events.READY, () => w.getCurrentSound(s => { clearTimeout(t); res({ w, s }); }));
+  });
+}
+// Play from startMs until 1s of track time has passed. Same arming rule as the game: wait until the position advances.
+function clip(w, startMs){
+  return new Promise(res => {
+    const t0 = performance.now(); let seen = null, first = null, done = false;
+    const finish = r => { if (done) return; done = true; w.unbind(SC.Widget.Events.PLAY_PROGRESS); w.pause(); res(r); };
+    setTimeout(() => finish({ played: false }), 10000);
+    w.bind(SC.Widget.Events.PLAY_PROGRESS, e => {
+      const p = e.currentPosition;
+      if (first === null) {
+        if (p < startMs - 300 || p > startMs + 600) return;
+        if (seen === null || p <= seen) { seen = p; return; }
+        first = performance.now() - t0;
+      }
+      if (p - startMs >= 1000) finish({ played: true, latency: Math.round(first), stopAt: Math.round(p - startMs) });
+    });
+    w.setVolume(100); w.seekTo(startMs); w.play();
+  });
+}
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+document.getElementById("run").onclick = async function(){
+  this.disabled = true; rows.innerHTML = "";
+  let ok = 0;
+  for (let i = 0; i < list.length; i++) {
+    const song = list[i], tr = document.createElement("tr"); rows.appendChild(tr);
+    td(tr, i + 1); td(tr, song.t + " — " + song.a);
+    const trackCell = td(tr, "loading…", "muted");
+    try {
+      const { w, s } = await load(song);
+      const drm = ((s.media || {}).transcodings || []).some(x => /encrypted/.test(x.format.protocol));
+      trackCell.textContent = s.title + " | " + (s.user || {}).username + " | " + Math.round((s.full_duration || s.duration) / 1000) + "s | " + s.policy + (drm ? " | DRM" : "");
+      if (s.policy === "SNIP") { td(tr, ""); td(tr, ""); td(tr, ""); td(tr, "FAIL: 30s snip only", "bad"); continue; }
+      const startMs = Math.round((song.start || 0) * 1000);
+      const c1 = await clip(w, startMs); await wait(600);
+      const c2 = c1.played ? await clip(w, startMs) : { played: false };
+      td(tr, c1.played ? c1.latency + " ms" : "no audio", c1.played ? "" : "bad");
+      td(tr, c2.played ? c2.latency + " ms" : "no audio", c2.played ? (c2.latency > 300 ? "warn" : "") : "bad");
+      td(tr, c2.played ? c2.stopAt + " ms" : "");
+      const pass = c1.played && c2.played;
+      if (pass) ok++;
+      td(tr, pass ? "OK" : "FAIL: did not play (game falls back to Deezer)", pass ? "ok" : "bad");
+    } catch (e) {
+      trackCell.textContent = song.sc; td(tr, ""); td(tr, ""); td(tr, ""); td(tr, "FAIL: " + e.message, "bad");
+    }
+    await wait(400);
+  }
+  box.innerHTML = "";
+  document.getElementById("sum").textContent = ok + " of " + list.length + " OK";
+  this.disabled = false;
+};
+</script>
+</body>
+</html>
