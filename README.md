@@ -295,6 +295,7 @@ This repo is built to be worked on with Claude (Claude Code or Claude chat). Con
 - [x] SoundCloud widget support with optional `sc` and `start` fields, Deezer fallback
 - [x] Full-song reveal on win and loss
 - [x] After a skip or wrong guess the first ▶ plays only the new part, later presses from the start
+- [x] Removed on request (Nov 2026): Wild Dances, 1944, Фортеця Бахмут, Heart of Steel, Gravity, Under the Ladder, Чуєш мамо, Стожари, Прірва. Do not re-add them.
 - [x] First 15 songs migrated to SoundCloud: Вставай, Обійми, Люди як кораблі, Вахтерам, Червона рута, Щедрик, Stefania, Shum, Wild Dances, 1944, Плакала, Човен, Весна, Журавлі, Dancing Lasha Tumbai
   - Official uploads: 11 (Shum is Go_A's official radio edit, 183s, not the 172s Eurovision cut, which is a 30s snip on SoundCloud. Щедрик is the official Хор Гомін recording, not the Viter recording that Deezer has.)
   - Fan uploads, matched to the Deezer recording: Wild Dances, 1944 (official is a 30s snip), Червона рута (no verified official account), Плакала (the only official upload is a 2022 re-recording)
@@ -302,10 +303,10 @@ This repo is built to be worked on with Claude (Claude Code or Claude chat). Con
 - [x] Verify the 9 DRM tracks in a real browser: all 15 OK in desktop Chrome (Windows)
 - [ ] Same check in Firefox, Safari and on a phone
 - [ ] Check on a phone whether the media notification or lock screen shows the song title during a clip
-- [x] Remaining songs migrated with `tools/find_sc.py`: **105 of 110 songs now on SoundCloud** (64 DRM, 41 plain). All 105 played in desktop Chrome (Windows) with `tools/sc_check.html` logic; 4 failed once in a row and passed on a re-run, so a rare transient failure is possible (the game then falls back to Deezer).
-  - Fan uploads (official is a snip, missing, or a different version; all audio-matched to Deezer): Квіти в волоссі, Бета-каротин, Розпрягайте хлопці коней, Понад хмарами, Файне місто Тернопіль, Роксоляна, Чуєш мамо, Gravity, Ой у вишневому саду (plus the 4 from the first batch)
+- [x] Remaining songs migrated with `tools/find_sc.py`: **105 of 110 songs now on SoundCloud** (64 DRM, 41 plain; after removing 9 songs on request: 96 of 101). All 105 played in desktop Chrome (Windows) with `tools/sc_check.html` logic; 4 failed once in a row and passed on a re-run, so a rare transient failure is possible (the game then falls back to Deezer).
+  - Fan uploads (official is a snip, missing, or a different version; all audio-matched to Deezer): Квіти в волоссі, Бета-каротин, Розпрягайте хлопці коней, Понад хмарами, Файне місто Тернопіль, Роксоляна, Ой у вишневому саду, Плакала, Червона рута
   - Official but a different version from Deezer: У мене немає дому (230s vs 198s, 14s quiet intro, so `start: 13.7`), Два кольори (320s vs 273s), Shum, Stefania, Щедрик
-  - `start` offsets for silent intros: У мене немає дому, Молоком, Gravity, Не йди, Плакала, Гуцулка Ксеня, Три хвилини, Човен (measured on plain streams only; DRM tracks could not be measured)
+  - `start` offsets for silent intros: У мене немає дому, Молоком, Не йди, Плакала, Гуцулка Ксеня, Три хвилини, Човен (measured on plain streams only; DRM tracks could not be measured)
   - **Stay on Deezer, no usable upload:** Україно (Петриненко) and Стільникове кохання, Пливе кача (official uploads are 30s snips only), Свята (KAZKA: only remixes and an acoustic version), Ніч яка місячна (no Солов'яненко recording on SoundCloud)
 - [ ] Maybe: YouTube or Spotify embed as a reveal-only block for songs with no SoundCloud upload (YouTube needs GitHub Pages)
 - [ ] Difficulty tiers (very famous, well known)
