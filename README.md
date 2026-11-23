@@ -162,9 +162,13 @@ Measured in headless Chrome (Playwright), playable SoundCloud tracks:
 
 Inside the game: 1s, 2s and 4s clips stopped at 0.998s, 1.994s and 3.996s of track time. In the second round, with the muted pre-buffer, click-to-audio was 122ms. A DRM track that cannot decode falls back to Deezer after about 3s.
 
-What could **not** be verified in the Claude sandbox, and how to check it:
-- **DRM tracks** (9 of the first 15): open `tools/sc_check.html` in Chrome, Firefox or Safari, on desktop and on a phone. Every row should say OK.
-- **Ads** before a DRM track: listen during `tools/sc_check.html`. A "no audio" or long cold start on one track could be an ad.
+**Real browser (desktop Chrome on Windows, NL, not logged in to SoundCloud, Nov 2026):**
+- `tools/sc_check.html` logic: **15 of 15 OK**, including all 9 DRM tracks. Cold start 1.1-1.7s for DRM tracks (licence request), ~0.5s for plain streams; buffered start 20-24ms for all; 1s clips stopped at 1000-1015ms. No ads heard or seen (an ad would show up as a long cold start).
+- The game with Вставай (DRM), real clicks, second round so pre-buffered: 1s/2s/4s clips stopped at 0.986s/2.008s/3.999s, click to audio 276ms for the first clip, ~40ms after. Win reveal showed the widget and played from 0:00.
+- In a real browser `policy` reads `MONETIZE` for these tracks (the sandbox saw other values such as `ALLOW`); the game only rejects `SNIP` and `BLOCK`.
+
+Still not verified:
+- **Firefox and Safari**, and **phones**: run `tools/sc_check.html` there.
 - **Phones:** whether the lock screen or media notification shows the song title during a clip, and whether the muted warm-up is silent on iOS (iOS ignores `setVolume`).
 
 Status of the first migration (15 songs): see TODO.
@@ -291,7 +295,8 @@ This repo is built to be worked on with Claude (Claude Code or Claude chat). Con
   - Official uploads: 11 (Shum is Go_A's official radio edit, 183s, not the 172s Eurovision cut, which is a 30s snip on SoundCloud. Щедрик is the official Хор Гомін recording, not the Viter recording that Deezer has.)
   - Fan uploads, matched to the Deezer recording: Wild Dances, 1944 (official is a 30s snip), Червона рута (no verified official account), Плакала (the only official upload is a 2022 re-recording)
   - Stefania: KALUSH's official upload is a different edit from the Deezer one (same song)
-- [ ] Verify the 9 DRM tracks in a real browser with `tools/sc_check.html` (Chrome, Firefox, Safari, a phone)
+- [x] Verify the 9 DRM tracks in a real browser: all 15 OK in desktop Chrome (Windows)
+- [ ] Same check in Firefox, Safari and on a phone
 - [ ] Check on a phone whether the media notification or lock screen shows the song title during a clip
 - [ ] Migrate the remaining 95 songs to SoundCloud
 - [ ] Maybe: YouTube or Spotify embed as a reveal-only block for songs with no SoundCloud upload (YouTube needs GitHub Pages)
