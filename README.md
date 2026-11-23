@@ -305,7 +305,8 @@ This repo is built to be worked on with Claude (Claude Code or Claude chat). Con
   - Not stored: 39 tracks in other languages or instrumentals (Rammstein, Stromae, PSY, Shakira, Daft-Punk-style instrumentals, etc.).
   - Ukrainian-language songs from the playlist are added even when less famous: they are Tim's picks.
 - [x] Imported Tim's Spotify playlists "націоналісточка" (120) and "Українська бімба" (195), raw lists in `data/playlists/`: 114 Ukrainian songs added to the game (261 total), 70 Russian to `songs_ru.js`. Skipped: remixes and live duplicates of songs already in the game, 4 songs not on Deezer, 2 tracks of unknown language, 1 instrumental.
-- [ ] SoundCloud links for the songs added from the Spotify playlists (run `tools/find_sc.py`, review, `--apply`, then check in a real browser). Until then they play Deezer previews.
+- [x] SoundCloud links for the Spotify-playlist songs: 245 of 261 songs now on SoundCloud. 16 have no usable upload and play Deezer previews (official is a 30s snip, or only remixes/other versions exist).
+- [ ] Real-browser check of the ~100 new SoundCloud links from the Spotify import (open `tools/sc_check.html` in Chrome; not done yet). Silent-intro `start` offsets not measured for them yet.
 - [ ] Language mode: let the player choose Ukrainian, Russian, English or a mix (data is ready in `songs_ru.js` and `songs_en.js`; add SoundCloud links with `tools/find_sc.py` first)
 - [x] Removed on request (Nov 2026): Wild Dances, 1944, Фортеця Бахмут, Heart of Steel, Gravity, Under the Ladder, Чуєш мамо, Стожари, Прірва. Do not re-add them.
 - [x] First 15 songs migrated to SoundCloud: Вставай, Обійми, Люди як кораблі, Вахтерам, Червона рута, Щедрик, Stefania, Shum, Wild Dances, 1944, Плакала, Човен, Весна, Журавлі, Dancing Lasha Tumbai
