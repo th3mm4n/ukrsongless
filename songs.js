@@ -263,5 +263,19 @@ const SONGS = [
  {"id": 141186341, "t": "Нездара", "a": "Бумбокс", "al": "Boombox", "sc": "https://soundcloud.com/bumboks-music/nezdara"},
  {"id": 4002317221, "t": "Фіртка", "a": "Бумбокс", "al": "Boombox", "sc": "https://soundcloud.com/bumboks-music/firtka"},
  {"id": 2522419741, "t": "Пісня буде поміж нас", "a": "Тарас Чубай", "al": "Taras Chubai", "sc": "https://soundcloud.com/user-358932695/taras-chubaj-volodimir-ivasyuk"},
- {"id": 3303990891, "t": "Та сама", "a": "Tember Blanche", "al": "Tember Blanche", "sc": "https://soundcloud.com/temberblanche-music/ta-sama"}
+ {"id": 3303990891, "t": "Та сама", "a": "Tember Blanche", "al": "Tember Blanche", "sc": "https://soundcloud.com/temberblanche-music/ta-sama"},
+ {"id": 3067883861, "t": "Україна – це ти", "a": "Тіна Кароль", "al": "Tina Karol", "sc": "https://soundcloud.com/tinakarolofficial/mjds4m80xmr5"},
+ {"id": 2425583825, "t": "Червона рута", "a": "Софія Ротару", "al": "Sofia Rotaru", "sc": "https://soundcloud.com/sofiiarotaru-scmusic/chervona-ruta"},
+ {"id": 916948002, "t": "Так просто", "a": "Ірина Білик", "al": "Iryna Bilyk", "sc": "https://soundcloud.com/irinabilik-music/tak-prosto"},
+ {"id": 2062435587, "t": "Гуси", "a": "Wellboy", "al": "Wellboy", "sc": "https://soundcloud.com/wellboy-music/gusi"},
+ {"id": 3283964601, "t": "Охрана отмєна", "a": "Jerry Heil", "al": "Jerry Heil", "sc": "https://soundcloud.com/jerryheil-sc/oxrana_otmyena"},
+ {"id": 3282495541, "t": "Падло", "a": "alyona alyona", "al": "Alyona Alyona", "sc": "https://soundcloud.com/alyonaalyona/padlo"},
+ {"id": 1969383807, "t": "Vidlik", "a": "ONUKA", "al": "Onuka", "sc": "https://soundcloud.com/onukaofficial/vidlik1"},
+ {"id": 1297473342, "t": "Мила моя", "a": "Без обмежень", "al": "Bez Obmezhen", "sc": "https://soundcloud.com/bezobmezhen/mylamoya"},
+ {"id": 1297456542, "t": "Тону", "a": "Без обмежень", "al": "Bez Obmezhen", "sc": "https://soundcloud.com/bezobmezhen/tony2017"},
+ {"id": 2522409991, "t": "Наше літо", "a": "Тартак", "al": "Tartak", "sc": "https://soundcloud.com/christina-bugiichyk/tartak-nashe-lito-mp3"},
+ {"id": 551208092, "t": "Коханці", "a": "The Hardkiss", "al": "The Hardkiss", "sc": "https://soundcloud.com/thehardkiss-music/koxanczi"},
+ {"id": 1320332602, "t": "Рандеву", "a": "Artem Pivovarov", "al": "Artem Pivovarov", "sc": "https://soundcloud.com/artem-pivovarov/artem-pivovarov-randevu-ua-version"},
+ {"id": 2550558312, "t": "Батькам", "a": "YAKTAK", "al": "Yaktak", "sc": "https://soundcloud.com/andrey-gatto/kep1n-yaktak-batkam"},
+ {"id": 1240045912, "t": "Гупало Василь", "a": "ТНМК", "al": "TNMK", "sc": "https://soundcloud.com/user336403744/yfoadticy0k8"}
 ];

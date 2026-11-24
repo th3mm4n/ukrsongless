@@ -26,7 +26,11 @@ Reference games this is modelled on:
 
 ## Run it
 
-Open `index.html` in a browser (double-click is enough). Internet is required: clips come from SoundCloud (full track, from the start) or, for songs without a SoundCloud link, from Deezer previews. Both work from `file://`, so no local server is needed. To share it, GitHub Pages or any static host works the same way.
+**Online:** https://th3mm4n.github.io/ukrsongless/ (GitHub Pages, served from `main`, so it updates a minute or two after every merge).
+
+**Locally:** open `index.html` in a browser (double-click is enough). Internet is required: clips come from SoundCloud (full track, from the start). It works from `file://`, so no local server is needed.
+
+GitHub Pages setup (once): repository **Settings → Pages → Build and deployment → Source: Deploy from a branch → Branch: `main`, folder `/ (root)` → Save**. The empty `.nojekyll` file tells Pages to serve the files as they are, without a Jekyll build.
 
 ## The concept
 
@@ -325,10 +329,12 @@ This repo is built to be worked on with Claude (Claude Code or Claude chat). Con
   - Official but a different version from Deezer: У мене немає дому (230s vs 198s, 14s quiet intro, so `start: 13.7`), Два кольори (320s vs 273s), Shum, Stefania, Щедрик
   - `start` offsets for silent intros: У мене немає дому, Молоком, Не йди, Плакала, Гуцулка Ксеня, Три хвилини, Човен (measured on plain streams only; DRM tracks could not be measured)
   - **Stay on Deezer, no usable upload:** Україно (Петриненко) and Стільникове кохання, Пливе кача (official uploads are 30s snips only), Свята (KAZKA: only remixes and an acoustic version), Ніч яка місячна (no Солов'яненко recording on SoundCloud)
+- [x] 14 more well-known songs appended (Тіна Кароль, Ротару, Білик, Wellboy, Jerry Heil, alyona alyona, ONUKA, Без обмежень, Тартак, The Hardkiss, Пивоваров, YAKTAK, ТНМК), all with SoundCloud links: 275 songs, 258 playable. Not added, no usable upload (official is a snip or missing): Додому (KALUSH), Доброго вечора (Probass ∆ Hardi), Не спи, моя рідна земля and Дочка мельника (Мандри). Забув (ТНМК) skipped: only an orchestra version.
+- [x] Re-checked the 17 songs without `sc`: still no usable upload. Старенький трамвай fan uploads are a different recording (r 0.48).
 - [ ] Maybe: YouTube or Spotify embed as a reveal-only block for songs with no SoundCloud upload (YouTube needs GitHub Pages)
 - [ ] Difficulty tiers (very famous, well known)
 - [ ] Statistics and streaks
 - [ ] More songs, 200 or more
-- [ ] GitHub Pages deployment
+- [x] GitHub Pages deployment (see Run it)
 - [ ] Hint mode: show the artist or the decade after N wrong guesses
 - [ ] Artist-guess mode
