@@ -26,7 +26,11 @@ Reference games this is modelled on:
 
 ## Run it
 
-Open `index.html` in a browser (double-click is enough). Internet is required: clips come from SoundCloud (full track, from the start) or, for songs without a SoundCloud link, from Deezer previews. Both work from `file://`, so no local server is needed. To share it, GitHub Pages or any static host works the same way.
+**Online:** https://th3mm4n.github.io/ukrsongless/ (GitHub Pages, served from `main`, so it updates a minute or two after every merge).
+
+**Locally:** open `index.html` in a browser (double-click is enough). Internet is required: clips come from SoundCloud (full track, from the start). It works from `file://`, so no local server is needed.
+
+GitHub Pages setup (once): repository **Settings → Pages → Build and deployment → Source: Deploy from a branch → Branch: `main`, folder `/ (root)` → Save**. The empty `.nojekyll` file tells Pages to serve the files as they are, without a Jekyll build.
 
 ## The concept
 
@@ -331,6 +335,6 @@ This repo is built to be worked on with Claude (Claude Code or Claude chat). Con
 - [ ] Difficulty tiers (very famous, well known)
 - [ ] Statistics and streaks
 - [ ] More songs, 200 or more
-- [ ] GitHub Pages deployment
+- [x] GitHub Pages deployment (see Run it)
 - [ ] Hint mode: show the artist or the decade after N wrong guesses
 - [ ] Artist-guess mode
