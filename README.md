@@ -307,7 +307,9 @@ This repo is built to be worked on with Claude (Claude Code or Claude chat). Con
   - Ukrainian-language songs from the playlist are added even when less famous: they are Tim's picks.
 - [x] Imported Tim's Spotify playlists "націоналісточка" (120) and "Українська бімба" (195), raw lists in `data/playlists/`: 114 Ukrainian songs added to the game (261 total), 70 Russian to `songs_ru.js`. Skipped: remixes and live duplicates of songs already in the game, 4 songs not on Deezer, 2 tracks of unknown language, 1 instrumental.
 - [x] SoundCloud links for the Spotify-playlist songs: 245 of 261 songs now on SoundCloud. 16 have no usable upload and play Deezer previews (official is a 30s snip, or only remixes/other versions exist).
-- [ ] Real-browser check of the ~100 new SoundCloud links from the Spotify import (open `tools/sc_check.html` in Chrome; not done yet). Silent-intro `start` offsets not measured for them yet.
+- [x] Real-browser check of the 105 SoundCloud links from the Spotify import: all 105 played in desktop Chrome (Nov 24). Note: checking many links in a row makes SoundCloud throttle for a while (a block of consecutive "did not play"); re-run only the failures a few minutes later before concluding a link is broken.
+- [x] Silent-intro `start` offsets measured for the 68 non-DRM links of that import (21 set). DRM tracks cannot be measured in the sandbox.
+- [x] Fixed: DZIDZIO Павук/Ялта were gachi "right version" mashups (Павук replaced, Ялта has no normal upload), Wellboy Вишні was the New Year version (replaced).
 - [ ] Language mode: let the player choose Ukrainian, Russian, English or a mix (data is ready in `songs_ru.js` and `songs_en.js`; add SoundCloud links with `tools/find_sc.py` first)
 - [x] Removed on request (Nov 2026): Wild Dances, 1944, Фортеця Бахмут, Heart of Steel, Gravity, Under the Ladder, Чуєш мамо, Стожари, Прірва. Do not re-add them.
 - [x] First 15 songs migrated to SoundCloud: Вставай, Обійми, Люди як кораблі, Вахтерам, Червона рута, Щедрик, Stefania, Shum, Wild Dances, 1944, Плакала, Човен, Весна, Журавлі, Dancing Lasha Tumbai
