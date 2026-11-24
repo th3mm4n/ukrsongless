@@ -34,7 +34,7 @@ Open `index.html` in a browser (double-click is enough). Internet is required: c
 - **Loop:** play clip, type a guess (autocomplete over the known song list), submit or skip. Wrong or skipped means the next clip is longer. Six tries, then the answer is revealed.
 - **Audience:** people who know Ukrainian music. So the list is *iconic* songs most people recognise, not deep cuts.
 - **Modes:**
-  - **Daily:** everyone gets the same song on a given day. Picked by a deterministic shuffle (seeded RNG) indexed by the date, so no server is needed. Result is kept in `localStorage`.
+  - **Daily:** everyone gets the same song on a given day (the date is taken in Kyiv time, so it switches at the same moment everywhere). No server: days are grouped into fixed 100-day cycles and each cycle orders the songs with a seeded "inside-out" shuffle, so **appending** songs to `songs.js` changes at most one day per cycle and today's song almost never moves. Reordering or deleting songs does reshuffle the schedule. The result is kept in `localStorage` together with the song ID, so saved progress for a different song is ignored.
   - **Unlimited:** random song each round, avoiding the last 30.
 - **Search box:** accepts Cyrillic or Latin (`vstavay`, `boombox`, `shchedryk`). Latin is transliterated to Cyrillic, and each song also has a Latin artist alias.
 - **Share:** copies an emoji result (green, red, black squares) to the clipboard.
@@ -189,9 +189,9 @@ Tips for finding things on Deezer:
 Rules we used:
 - The bar is "most Ukrainians would recognise it", not "good song".
 - A mix of decades and genres: classics and folk, 90s rock, 2000s pop, Eurovision, recent hits.
-- Ukrainian language preferred. Skip Russian-language songs by Ukrainian artists.
+- Ukrainian-language songs. Some have English titles (Eurovision entries like "Stefania" or "Shum"), that is fine. Skip Russian-language songs by Ukrainian artists.
 - Duplicated titles are fine (e.g. two songs called "Люди"), the autocomplete shows the artist next to the title.
-- Aim for a list large enough that the daily mode does not repeat quickly. Currently 110 songs, so the daily song cycles about every 3.5 months.
+- Aim for a list large enough that the daily mode does not repeat quickly. Currently 110 songs; each 100-day daily cycle draws 100 of them without repeats.
 
 Ideas for more: add a `tier` (1 = everybody knows, 2 = well known) and a difficulty selector.
 
@@ -216,6 +216,7 @@ This repo is built to be worked on with Claude (Claude Code or Claude chat). Con
 
 **Conventions:**
 - Keep `songs.js` as plain `const SONGS = [...]`, one song per line, so diffs are readable.
+- Only **append** new songs at the end of `songs.js`. Reordering or deleting entries reshuffles the daily schedule for everyone.
 - Run `python3 tools/verify_songs.py` before every commit that touches songs.
 - No dependencies. Keep UI text in Ukrainian.
 
