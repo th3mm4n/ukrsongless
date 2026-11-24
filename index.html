@@ -38,6 +38,7 @@ h1 span{display:inline-block;width:18px;height:12px;vertical-align:-1px;margin-r
 .slot.wrong{color:var(--text);border-color:#5a2a35;background:rgba(239,91,91,.1)}
 .slot.skip{color:var(--muted);border-style:dashed}
 .slot.right{color:var(--text);border-color:#1d6b4d;background:rgba(62,207,142,.12)}
+.slot.artist{color:var(--text);border-color:#8a7419;background:rgba(255,210,63,.18)}
 .guess{position:relative}
 .guess input{width:100%;height:46px;border-radius:10px;border:1px solid var(--line);background:#0c1424;color:var(--text);padding:0 14px;font:inherit;font-size:15px;outline:none}
 .guess input:focus{border-color:var(--blue)}
@@ -55,6 +56,10 @@ h1 span{display:inline-block;width:18px;height:12px;vertical-align:-1px;margin-r
 .result p{margin:2px 0;color:var(--muted)}
 .result .song{color:var(--text);font-size:17px;margin:10px 0 2px}
 .result a{color:var(--yellow)}
+/* SoundCloud widget: present but invisible during the round (it shows the title), expanded on reveal */
+.scbox{height:0;overflow:hidden;opacity:0;pointer-events:none}
+.scbox.show{height:166px;opacity:1;pointer-events:auto;margin-bottom:12px;border-radius:12px}
+.scbox iframe{display:block;width:100%;height:166px;border:0}
 .foot{margin-top:22px;text-align:center;color:var(--muted);font-size:12px;line-height:1.6}
 .foot a{color:var(--muted)}
 @media (max-width:420px){#play{width:56px;height:56px}}
@@ -94,11 +99,13 @@ h1 span{display:inline-block;width:18px;height:12px;vertical-align:-1px;margin-r
     </div>
   </div>
 
+  <div class="scbox" id="scBox"></div>
+
   <div class="card result" id="result">
     <h2 id="rTitle"></h2>
     <p class="song" id="rSong"></p>
     <p id="rArtist"></p>
-    <p><a id="rLink" href="#" target="_blank" rel="noopener">Слухати на Deezer</a></p>
+    <p><a id="rLinkSc" href="#" target="_blank" rel="noopener">SoundCloud</a><span id="rLinkSep"> · </span><a id="rLink" href="#" target="_blank" rel="noopener">Слухати на Deezer</a></p>
     <div class="row">
       <button class="btn" id="full">▶ 30 секунд повністю</button>
       <button class="btn primary" id="share">Поділитись</button>
@@ -110,12 +117,14 @@ h1 span{display:inline-block;width:18px;height:12px;vertical-align:-1px;margin-r
   </div>
 
   <div class="foot">
-    <span id="count"></span> відомих українських пісень. Фрагменти (прев'ю) завантажуються з Deezer.<br>
+    <span id="count"></span> відомих українських пісень. Звук з SoundCloud (з початку пісні) або прев'ю з Deezer.<br>
     Потрібен інтернет. Щоденна пісня однакова для всіх у цей день.
   </div>
 </div>
 
 <script src="songs.js"></script>
+<!-- SoundCloud Widget API. If it fails to load (offline, blocked), every song falls back to Deezer. -->
+<script src="https://w.soundcloud.com/player/api.js"></script>
 <script>
 const CLIPS = [1, 2, 4, 8, 15, 30];
 const MAX = CLIPS.length;
@@ -149,8 +158,10 @@ function search(q){
   for (const s of SONGS) {
     if (s.key.includes(a) || s.key.includes(b)) out.push(s);
   }
-  out.sort((x, y) => (norm(x.t).startsWith(a) ? 0 : 1) - (norm(y.t).startsWith(a) ? 0 : 1));
-  return out.slice(0, 8);
+  // titles starting with the query first, then alphabetical; show every match (the list scrolls),
+  // so typing an artist with many songs (Скрябін has ~30) lists all of them
+  out.sort((x, y) => ((norm(x.t).startsWith(a) ? 0 : 1) - (norm(y.t).startsWith(a) ? 0 : 1)) || x.t.localeCompare(y.t, "uk"));
+  return out;
 }
 
 /* ---------- deezer preview (JSONP, works from a local file) ---------- */
@@ -178,25 +189,138 @@ async function getPreview(song){
   return hit.preview;
 }
 
-/* ---------- daily pick ---------- */
+/* ---------- soundcloud widget (full track, clips from the start) ---------- */
+const SC_PARAMS = "&auto_play=false&hide_related=true&show_comments=false&show_reposts=false&show_teaser=false&visual=false&buying=false&sharing=false&download=false&color=%232f6fe4";
+// Resolves with { widget, sound } once the track is ready and fully playable, rejects otherwise.
+function scLoad(song, rid){
+  return new Promise((resolve, reject) => {
+    if (!window.SC || !SC.Widget) { reject(new Error("no sc api")); return; }
+    const box = $("scBox"); box.innerHTML = "";
+    const f = document.createElement("iframe");
+    // encrypted-media is required: most official label uploads are DRM streams
+    f.allow = "autoplay; encrypted-media"; f.title = "SoundCloud"; f.scrolling = "no";
+    f.src = "https://w.soundcloud.com/player/?url=" + encodeURIComponent(song.sc) + SC_PARAMS;
+    box.appendChild(f);
+    const w = SC.Widget(f);
+    const timer = setTimeout(() => reject(new Error("sc timeout")), 12000);
+    w.bind(SC.Widget.Events.ERROR, () => { clearTimeout(timer); reject(new Error("sc error")); });
+    w.bind(SC.Widget.Events.READY, () => {
+      w.getCurrentSound(s => {
+        clearTimeout(timer);
+        // SNIP = only a 30s preview for non-subscribers, useless here
+        if (!s || s.policy === "SNIP" || s.policy === "BLOCK" || s.streamable === false) { reject(new Error("sc not playable")); return; }
+        w.bind(SC.Widget.Events.PLAY_PROGRESS, e => { if (rid === roundId) scProgress(e.currentPosition); });
+        w.bind(SC.Widget.Events.PLAY, () => { if (rid === roundId) syncFullBtn(true); });
+        w.bind(SC.Widget.Events.PAUSE, () => {
+          if (rid !== roundId) return;
+          // the muted warm-up was stopped by the widget itself before any audio: the stream probably cannot play here
+          if (scSt.mode === "warm" && !scSt.warmed) scSt.suspect = true;
+          syncFullBtn(false);
+        });
+        w.bind(SC.Widget.Events.FINISH, () => { if (rid === roundId) { if (scSt.mode === "clip") stop(); syncFullBtn(false); } });
+        resolve({ widget: w, sound: s });
+      });
+    });
+  });
+}
+// Widget position updates drive the clip: the clip length is measured in track time, so start latency never shortens it.
+function scProgress(pos){
+  const s = scSt;
+  if (s.mode === "warm") {          // muted pre-buffer: as soon as audio flows, rewind and wait
+    if (pos > 0) { scw.pause(); scw.seekTo(s.startMs); scw.setVolume(100); s.mode = "idle"; s.warmed = true; }
+    return;
+  }
+  if (s.mode !== "clip") return;
+  if (!s.armed) {
+    // ignore stale events from before the seek, and only arm once the position actually advances
+    // (a stream that fails to decode reports the start position and never moves)
+    if (pos < s.fromMs - 300 || pos > s.fromMs + 600) return;
+    if (s.seen === null || pos <= s.seen) { s.seen = pos; return; }
+    s.armed = true; s.warmed = true;
+    if ($("status").textContent === "Буферизація…") setStatus("");
+  }
+  s.t = (pos - s.startMs) / 1000; s.at = performance.now();
+  if (s.t >= s.limit) stop();
+}
+function scWarm(){
+  if (engine !== "sc" || done || scSt.warmed || scSt.mode !== "idle") return;
+  scSt.mode = "warm"; scw.setVolume(0); scw.seekTo(scSt.startMs); scw.play();
+  const rid = roundId;
+  setTimeout(() => { if (rid === roundId && scSt.mode === "warm") { scw.pause(); scw.seekTo(scSt.startMs); scw.setVolume(100); scSt.mode = "idle"; } }, 6000);
+}
+// Any tap on the page counts as a user gesture, so pre-buffer then (often the guess box is tapped before ▶).
+document.addEventListener("pointerdown", () => setTimeout(scWarm, 0), true);
+
+/* ---------- daily pick ----------
+   Stable when songs.js grows: the day is counted in Kyiv time from DAILY_EPOCH, days are grouped
+   into fixed cycles of DAILY_CYCLE days, and each cycle orders ALL songs (with or without a
+   SoundCloud link) with an "inside-out" Fisher-Yates shuffle keyed by position in songs.js.
+   Appending a song, or adding an `sc` link to an existing one, changes at most a day or two of
+   the cycle, so today's song almost never moves. Only append to songs.js: reordering or
+   deleting entries reshuffles the schedule.
+   Day N plays slot N of the cycle (see cycleSlots for songs without a link and for avoiding
+   repeats across cycles). If today's link fails to play, `shift` moves to a spare song. */
+const DAILY_EPOCH = Date.UTC(2026, 0, 1), DAILY_CYCLE = 100, DAILY_SEED = 20260101;
 function rng(seed){ let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function dayInfo(){
-  const d = new Date();
-  const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-  const dayNum = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
-  return { key, dayNum };
+  // Calendar date in Kyiv, so the song changes at the same moment for everyone.
+  let key;
+  try { key = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); } catch (e) {}
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(key || "")) { const d = new Date(); key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  const [y, m, dd] = key.split("-").map(Number);
+  const dayIdx = Math.max(0, Math.round((Date.UTC(y, m - 1, dd) - DAILY_EPOCH) / 86400000));
+  return { key, dayIdx };
 }
-function dailySong(){
-  const order = SONGS.map((_, i) => i), r = rng(20260101);
-  for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
-  const { dayNum } = dayInfo();
-  return SONGS[order[((dayNum % order.length) + order.length) % order.length]];
+// Only songs with a SoundCloud link are picked as answers, so every clip starts at the beginning of the song.
+// Songs without one stay in SONGS for the guess search.
+const PLAYABLE = SONGS.filter(s => s.sc);
+function cycleOrder(cycle){
+  const order = [];
+  for (let k = 0; k < SONGS.length; k++) {
+    const j = Math.floor(rng(DAILY_SEED ^ Math.imul(cycle + 1, 0x9E3779B1) ^ Math.imul(k + 1, 0x85EBCA77))() * (k + 1));
+    if (j === k) order.push(k); else { order.push(order[j]); order[j] = k; }
+  }
+  return order;
+}
+// The cycle's DAILY_CYCLE slots: slot i is order[i] if it has a SoundCloud link and was not among
+// the last DAILY_GAP days of the previous cycle; otherwise the next eligible song from the rest
+// of the order takes it. Positional, so a song gaining a link only changes its own slot.
+const DAILY_GAP = 60, cycleMemo = {};
+function cycleSlots(cycle){
+  if (cycleMemo[cycle]) return cycleMemo[cycle];
+  const order = cycleOrder(cycle), n = Math.min(DAILY_CYCLE, order.length);
+  const avoid = new Set(cycle > 0 ? cycleSlots(cycle - 1).slots.slice(-DAILY_GAP) : []);
+  const ok = k => SONGS[k].sc && !avoid.has(k);
+  const slots = order.slice(0, n), spare = new Set(order.slice(n).filter(ok));
+  // each open slot takes the spare song with the highest per-(cycle, slot, song) score, so adding or
+  // removing one candidate only changes the slot it would win
+  const score = (i, k) => rng(DAILY_SEED ^ Math.imul(cycle + 1, 0x2545F491) ^ Math.imul(i + 1, 0x68E31DA4) ^ Math.imul(k + 1, 0x1B56C4E9))();
+  for (let i = 0; i < n; i++) {
+    if (ok(slots[i])) continue;
+    let best = -1, bs = -1;
+    for (const k of spare) { const v = score(i, k); if (v > bs) { bs = v; best = k; } }
+    if (best >= 0) { slots[i] = best; spare.delete(best); }
+    else { const any = order.find(k => SONGS[k].sc && !slots.includes(k)); if (any !== undefined) slots[i] = any; }
+  }
+  return (cycleMemo[cycle] = { slots, spare: [...spare] });
+}
+// shift: how many songs were skipped today because their SoundCloud link did not play
+function dailySong(shift, dayIdx){
+  if (dayIdx === undefined) dayIdx = dayInfo().dayIdx;
+  const { slots, spare } = cycleSlots(Math.floor(dayIdx / DAILY_CYCLE)), pos = dayIdx % DAILY_CYCLE % slots.length;
+  if (!shift) return SONGS[slots[pos]];
+  const list = spare.length ? spare : PLAYABLE.map(s => SONGS.indexOf(s));
+  return SONGS[list[(pos * 7 + shift - 1) % list.length]];
 }
 
 /* ---------- state ---------- */
 const $ = id => document.getElementById(id);
 const audio = new Audio(); audio.preload = "auto";
 let mode = "daily", target = null, previewUrl = null, guesses = [], done = false, won = false, selected = null, raf = 0, recent = [];
+// engine: "sc" (SoundCloud widget) or "dz" (Deezer preview) for the current round, null while loading
+let engine = null, scw = null, scSound = null, roundId = 0, scWait = 0, newFrom = 0, dailyShift = 0;
+const fmtSec = x => String(x).replace(".", ",");
+let scSt = { mode: "idle", startMs: 0, fromMs: 0, limit: 0, armed: false, seen: null, warmed: false, t: 0, at: 0 };
 
 function store(k, v){ try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
 const dailyKey = () => "ua-songless-daily-" + dayInfo().key;
@@ -225,6 +349,7 @@ function renderSlots(){
     if (g) {
       if (g.skip) { d.classList.add("skip"); d.textContent = "Пропущено"; }
       else if (g.right) { d.classList.add("right"); d.textContent = "✓ " + g.label; }
+      else if (g.artist) { d.classList.add("artist"); d.textContent = "≈ " + g.label; }
       else { d.classList.add("wrong"); d.textContent = "✗ " + g.label; }
     } else if (i === guesses.length && !done) d.classList.add("cur");
     box.appendChild(d);
@@ -233,23 +358,37 @@ function renderSlots(){
 function renderResult(){
   $("play-area").style.display = done ? "none" : "";
   const r = $("result"); r.style.display = done ? "block" : "none";
-  if (!done) return;
+  if (!done) { $("scBox").classList.remove("show"); return; }
   $("rTitle").textContent = won ? "Вгадано! 🎉" : "Не вийшло";
   $("rSong").textContent = target.t;
   $("rArtist").textContent = target.a;
   $("rLink").href = "https://www.deezer.com/track/" + target.id;
+  const sc = engine === "sc";
+  $("rLinkSc").style.display = $("rLinkSep").style.display = sc ? "" : "none";
+  $("rLinkSc").href = sc ? ((scSound && scSound.permalink_url) || target.sc) : "#";
+  $("rLink").textContent = sc ? "Deezer" : "Слухати на Deezer";
+  $("full").textContent = sc ? "▶ Уся пісня" : "▶ 30 секунд повністю";
+  $("scBox").classList.toggle("show", sc);
   $("next").style.display = mode === "free" ? "" : "none";
   $("shareNote").textContent = "";
 }
 function renderAll(){ renderTrack(); renderSlots(); renderResult(); $("skip").textContent = guesses.length === MAX - 1 ? "Здатися" : "Пропустити (+ час)"; }
 
 /* ---------- playback ---------- */
-function stop(){ cancelAnimationFrame(raf); audio.pause(); $("head").style.display = "none"; $("play").textContent = "▶"; }
-function playClip(seconds){
+function stop(){
+  cancelAnimationFrame(raf); clearTimeout(scWait);
+  if (engine === "sc" && scw && (scSt.mode === "clip" || scSt.mode === "full")) { scw.pause(); scSt.mode = "idle"; }
+  audio.pause(); $("head").style.display = "none"; $("play").textContent = "▶";
+}
+// from: where the clip starts, in seconds of the clip ladder (0 = from the start, or the previous
+// clip's end right after a skip or wrong guess, so only the newly unlocked part plays)
+function playClip(seconds, from){
+  from = from || 0;
+  if (engine === "sc") { scClip(seconds, from); return; }
   if (!previewUrl) return;
   stop();
   const total = Math.sqrt(30), head = $("head"), track = $("track");
-  audio.currentTime = 0;
+  audio.currentTime = from;
   audio.play().then(() => {
     $("play").textContent = "■"; head.style.display = "block";
     const tick = () => {
@@ -261,26 +400,97 @@ function playClip(seconds){
     tick();
   }).catch(() => setStatus("Браузер не дозволив відтворення. Натисни ▶ ще раз.", true));
 }
+function scClip(seconds, from){
+  stop();
+  const s = scSt, rid = roundId, total = Math.sqrt(30), head = $("head");
+  s.mode = "clip"; s.limit = seconds; s.armed = false; s.seen = null; s.t = from; s.at = 0;
+  s.fromMs = s.startMs + Math.round(from * 1000);
+  scw.setVolume(100); scw.seekTo(s.fromMs); scw.play();
+  $("play").textContent = "■";
+  const busy = setTimeout(() => { if (rid === roundId && s.mode === "clip" && !s.armed) setStatus("Буферизація…"); }, 700);
+  scWait = setTimeout(() => { if (rid === roundId && s.mode === "clip" && !s.armed) scFail(); }, s.suspect ? 3000 : 9000);
+  const tick = () => {
+    if (s.mode !== "clip") { clearTimeout(busy); return; }
+    if (s.armed) {
+      if (performance.now() - s.at > 5000) { scFail(); return; }   // stalled mid-clip
+      // extrapolate between widget events, but never more than 250ms past the last real position
+      const t = Math.min(s.t + Math.min((performance.now() - s.at) / 1000, 0.25), s.limit);
+      head.style.display = "block"; head.style.left = "calc((100% - 3px) * " + (Math.sqrt(t) / total) + ")";
+      if (t >= s.limit) { stop(); return; }
+    }
+    raf = requestAnimationFrame(tick);
+  };
+  tick();
+}
+// The SoundCloud track does not play (deleted, region block, DRM unsupported...). No Deezer preview: it starts
+// mid-song. Take another song instead (daily: the next one in today's order, guesses reset).
+let skipped = 0;
+function scFail(){ skipSong(); }
+function skipSong(){
+  stop(); engine = null; scw = null; $("scBox").innerHTML = ""; $("play").disabled = true;
+  if (++skipped > 5) {
+    setStatus("SoundCloud не відповідає (потрібен інтернет). ", true);
+    const b = document.createElement("a"); b.href = "#"; b.textContent = "Спробувати ще раз";
+    b.style.color = "var(--yellow)"; b.onclick = ev => { ev.preventDefault(); skipped = 0; startRound(); };
+    $("status").appendChild(b); return;
+  }
+  setStatus("Ця пісня зараз не грає, беремо іншу…", true);
+  if (mode === "daily") { dailyShift++; guesses = []; done = false; won = false; persist(); }
+  setTimeout(startRound, 900);
+}
+async function useDeezer(song, rid){
+  const url = await getPreview(song);
+  if (rid !== roundId) return;
+  previewUrl = url; audio.src = url; audio.load(); engine = "dz";
+  $("play").disabled = false; renderResult();
+}
+// Reveal: the whole track in the visible widget.
+function scFull(fromStart){
+  if (engine !== "sc") return;
+  stop(); scSt.mode = "full"; scw.setVolume(100);
+  if (fromStart) scw.seekTo(0);
+  scw.play();
+}
+function syncFullBtn(playing){
+  if (engine === "sc" && done) { $("full").textContent = playing ? "⏸ Пауза" : "▶ Уся пісня"; $("play").textContent = playing ? "■" : "▶"; }
+}
+function toggleFull(){ scw.isPaused(p => { if (p) scFull(false); else { scw.pause(); scSt.mode = "idle"; } }); }
+// The first press after unlocking a longer clip plays only the new part; later presses play from the start.
+function playNext(){ const from = newFrom; newFrom = 0; playClip(CLIPS[stage()], from); }
 $("play").onclick = () => {
-  if (audio.paused) playClip(done ? 30 : CLIPS[stage()]); else stop();
+  if (engine === "sc") {
+    if (done) toggleFull();
+    else if (scSt.mode === "clip") stop(); else playNext();
+    return;
+  }
+  if (!audio.paused) stop(); else if (done) playClip(30); else playNext();
 };
-$("full").onclick = () => { audio.paused ? playClip(30) : stop(); };
+$("full").onclick = () => {
+  if (engine === "sc") { toggleFull(); return; }
+  audio.paused ? playClip(30) : stop();
+};
 
 /* ---------- game flow ---------- */
-function persist(){ if (mode === "daily") store(dailyKey(), { guesses, done, won }); }
-function finish(w){ done = true; won = w; stop(); persist(); renderAll(); }
+function persist(){ if (mode === "daily") store(dailyKey(), { id: target && target.id, guesses, done, won, shift: dailyShift }); }
+// finish() always runs from a click (guess or give up), so the reveal may start playing with sound.
+function finish(w){ done = true; won = w; stop(); setStatus(""); persist(); renderAll(); if (engine === "sc") scFull(true); }
 function addGuess(g){
   guesses.push(g);
   if (g.right) { finish(true); return; }
   if (guesses.length >= MAX) { finish(false); return; }
+  newFrom = CLIPS[stage() - 1];
   persist(); renderAll();
-  setStatus("Знову ▶ з довшим фрагментом.");
+  setStatus((g.artist ? "Виконавець правильний, пісня ні. " : "") + "▶ зіграє нову частину (" + fmtSec(newFrom) + "–" + fmtSec(CLIPS[stage()]) + " с), далі ▶ грає з початку.");
 }
-$("skip").onclick = () => { if (!done && previewUrl) addGuess({ skip: true }); };
+$("skip").onclick = () => { if (!done && engine) addGuess({ skip: true }); };
 $("submit").onclick = submitGuess;
+// Right artist, wrong song: any shared artist counts (collabs like "СТРУКТУРА ЩАСТЯ & SadSvit" match "SadSvit").
+function artistParts(s){ return (s.a + " & " + (s.al || "")).split(/\s*(?:&|,|\bfeat\.?|\bft\.?|\bx\b)\s*/i).map(norm).filter(x => x.length > 1); }
+function sameArtist(a, b){ const pb = artistParts(b); return artistParts(a).some(x => pb.includes(x)); }
 function submitGuess(){
   if (!selected || done) return;
-  addGuess({ label: selected.t + " — " + selected.a, right: selected.id === target.id });
+  const right = selected.id === target.id;
+  addGuess({ label: selected.t + " — " + selected.a, right, artist: !right && sameArtist(selected, target) });
   selected = null; $("q").value = ""; $("submit").disabled = true; hideList();
 }
 
@@ -319,7 +529,7 @@ $("q").addEventListener("keydown", e => {
 
 /* share */
 $("share").onclick = async () => {
-  const sq = guesses.map(g => g.right ? "🟩" : g.skip ? "⬛" : "🟥").join("");
+  const sq = guesses.map(g => g.right ? "🟩" : g.skip ? "⬛" : g.artist ? "🟨" : "🟥").join("");
   const head = mode === "daily" ? "Впізнай пісню · " + dayInfo().key : "Впізнай пісню";
   const txt = head + "\n" + (won ? guesses.length + "/" + MAX : "X/" + MAX) + " " + sq;
   let ok = false;
@@ -333,32 +543,44 @@ $("share").onclick = async () => {
 /* ---------- rounds ---------- */
 async function startRound(){
   stop(); selected = null; $("q").value = ""; $("submit").disabled = true; hideList();
-  previewUrl = null; $("play").disabled = true; setStatus("Завантаження фрагмента…");
+  const rid = ++roundId;
+  engine = null; scw = null; scSound = null; $("scBox").innerHTML = ""; $("scBox").classList.remove("show");
+  previewUrl = null; newFrom = 0; $("play").disabled = true; setStatus("Завантаження фрагмента…");
   if (mode === "daily") {
-    target = dailySong();
     const saved = store(dailyKey());
-    guesses = saved && saved.guesses ? saved.guesses : []; done = !!(saved && saved.done); won = !!(saved && saved.won);
+    dailyShift = (saved && saved.shift) || 0;
+    target = dailySong(dailyShift);
+    // Saved guesses only count if they were for this exact song (the list may have changed since).
+    const sameSong = saved && saved.id === target.id;
+    guesses = sameSong && saved.guesses ? saved.guesses : []; done = !!(sameSong && saved.done); won = !!(sameSong && saved.won);
   } else {
-    let pool = SONGS.filter(s => !recent.includes(s.id));
-    if (!pool.length) { recent = []; pool = SONGS; }
+    let pool = PLAYABLE.filter(s => !recent.includes(s.id));
+    if (!pool.length) { recent = []; pool = PLAYABLE; }
     target = pool[Math.floor(Math.random() * pool.length)];
     recent.push(target.id); if (recent.length > 30) recent.shift();
     guesses = []; done = false; won = false;
   }
   renderAll();
   const mine = target;
-  try {
-    const url = await getPreview(mine);
-    if (mine !== target) return;
-    previewUrl = url; audio.src = url; audio.load();
-    $("play").disabled = false;
-    setStatus(done ? "" : "Натисни ▶ і слухай.");
-  } catch (e) {
-    if (mine !== target) return;
-    setStatus("Не вдалося завантажити фрагмент (потрібен інтернет). ", true);
-    const b = document.createElement("a"); b.href = "#"; b.textContent = "Спробувати ще раз";
-    b.style.color = "var(--yellow)"; b.onclick = ev => { ev.preventDefault(); startRound(); };
-    $("status").appendChild(b);
+  {
+    try {
+      const r = await scLoad(mine, rid);
+      if (rid !== roundId) return;
+      skipped = 0;
+      scw = r.widget; scSound = r.sound; engine = "sc";
+      scSt = { mode: "idle", startMs: Math.round((mine.start || 0) * 1000), fromMs: 0, limit: 0, armed: false, seen: null, warmed: false, t: 0, at: 0 };
+      $("play").disabled = false; renderResult();
+      setStatus(done ? "" : "Натисни ▶ і слухай.");
+      // pre-buffer now if the browser already allows sound (after any earlier tap), otherwise on the next tap
+      if (navigator.userActivation && navigator.userActivation.hasBeenActive) scWarm();
+      return;
+    } catch (e) {
+      if (rid !== roundId) return;
+      console.warn("SoundCloud unavailable for", mine.t, "-", e.message);
+      $("scBox").innerHTML = "";
+      // a finished daily round just shows the result; otherwise take another song
+      if (done) { setStatus(""); renderResult(); } else skipSong();
+    }
   }
 }
 $("next").onclick = startRound;
