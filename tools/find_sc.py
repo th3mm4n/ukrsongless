@@ -22,7 +22,7 @@ ROOT = pathlib.Path(__file__).parent.parent
 SONGS_JS = ROOT / (sys.argv[sys.argv.index("--file") + 1] if "--file" in sys.argv else "songs.js")
 MATCH_OK = 0.65      # spectrogram correlation needed to call it the same recording
 MAX_LEN_DIFF = 8     # seconds vs Deezer
-BAD_WORDS = r"right ?version|gachi|гачі|гачи|♂|meme|мем|parody|пародія|remix|ремікс|ремикс|rmx|live|наживо|концерт|cover|кавер|karaoke|караоке|instrumental|мінус|минус|minus|speed ?up|sped|slowed|nightcore|8d|bass ?boost|mashup|мешап|acoustic|акустик|piano|orchestra version|версия|tribute|reprise|demo|intro|outro|vip"
+BAD_WORDS = r"new ?year|новорічн|christmas|xmas|right ?version|gachi|гачі|гачи|♂|meme|мем|parody|пародія|remix|ремікс|ремикс|rmx|live|наживо|концерт|cover|кавер|karaoke|караоке|instrumental|мінус|минус|minus|speed ?up|sped|slowed|nightcore|8d|bass ?boost|mashup|мешап|acoustic|акустик|piano|orchestra version|версия|tribute|reprise|demo|intro|outro|vip"
 
 # ---------- text matching (same rules as the game) ----------
 MAP2 = {"shch": "щ", "sh": "ш", "ch": "ч", "zh": "ж", "kh": "х", "ts": "ц", "ya": "я", "yu": "ю", "ye": "є", "yi": "ї", "ie": "є", "iu": "ю", "ia": "я"}

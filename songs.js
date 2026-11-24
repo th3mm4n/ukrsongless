@@ -240,7 +240,7 @@ const SONGS = [
  {"id": 1412099272, "t": "Твій день", "a": "Арсен Мірзоян", "al": "Arsen Mirzoyan"},
  {"id": 106383740, "t": "Все буде добре", "a": "Океан Ельзи", "al": "Okean Elzy", "sc": "https://soundcloud.com/okieanielzi/vse-bude-dobre"},
  {"id": 2523988131, "t": "вул. Фучика", "a": "adm:t", "al": "adm:t"},
- {"id": 1518133662, "t": "Вишні", "a": "Wellboy", "al": "Wellboy", "sc": "https://soundcloud.com/wellboy-music/vishni-new-year-version"},
+ {"id": 1518133662, "t": "Вишні", "a": "Wellboy", "al": "Wellboy", "sc": "https://soundcloud.com/k57irrsmsckx/wellboy_vishni"},
  {"id": 622627382, "t": "2 дні", "a": "LAUD", "al": "LAUD", "sc": "https://soundcloud.com/enjoylaud/2-dni"},
  {"id": 746082882, "t": "Бухло", "a": "Жадан і Собаки", "al": "Zhadan i Sobaky", "sc": "https://soundcloud.com/zhadansobaki/3gcksmuvdkt5"},
  {"id": 7040244, "t": "Олені", "a": "ТІК", "al": "TIK", "sc": "https://soundcloud.com/tik-band/wrn4ixqg8tm2"},
