@@ -325,6 +325,8 @@ This repo is built to be worked on with Claude (Claude Code or Claude chat). Con
   - Official but a different version from Deezer: У мене немає дому (230s vs 198s, 14s quiet intro, so `start: 13.7`), Два кольори (320s vs 273s), Shum, Stefania, Щедрик
   - `start` offsets for silent intros: У мене немає дому, Молоком, Не йди, Плакала, Гуцулка Ксеня, Три хвилини, Човен (measured on plain streams only; DRM tracks could not be measured)
   - **Stay on Deezer, no usable upload:** Україно (Петриненко) and Стільникове кохання, Пливе кача (official uploads are 30s snips only), Свята (KAZKA: only remixes and an acoustic version), Ніч яка місячна (no Солов'яненко recording on SoundCloud)
+- [x] 14 more well-known songs appended (Тіна Кароль, Ротару, Білик, Wellboy, Jerry Heil, alyona alyona, ONUKA, Без обмежень, Тартак, The Hardkiss, Пивоваров, YAKTAK, ТНМК), all with SoundCloud links: 275 songs, 258 playable. Not added, no usable upload (official is a snip or missing): Додому (KALUSH), Доброго вечора (Probass ∆ Hardi), Не спи, моя рідна земля and Дочка мельника (Мандри). Забув (ТНМК) skipped: only an orchestra version.
+- [x] Re-checked the 17 songs without `sc`: still no usable upload. Старенький трамвай fan uploads are a different recording (r 0.48).
 - [ ] Maybe: YouTube or Spotify embed as a reveal-only block for songs with no SoundCloud upload (YouTube needs GitHub Pages)
 - [ ] Difficulty tiers (very famous, well known)
 - [ ] Statistics and streaks
