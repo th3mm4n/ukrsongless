@@ -351,5 +351,9 @@ const SONGS = [
 {"id": 2820369722, "t": "Нева", "a": "5'nizza", "al": "5'nizza", "sc": "https://soundcloud.com/5nizzamusic/13-1"},
 {"id": 2820369602, "t": "Сюрная", "a": "5'nizza", "al": "5'nizza", "sc": "https://soundcloud.com/5nizzamusic/01-1"},
 {"id": 2820369752, "t": "Пятница", "a": "5'nizza", "al": "5'nizza", "sc": "https://soundcloud.com/5nizzamusic/16-1"},
-{"id": 1599049682, "t": "Все красиво", "a": "Антитіла", "al": "Antytila", "sc": "https://soundcloud.com/antytilaofficial/vsekrasivo", "start": 2.0}
+{"id": 1599049682, "t": "Все красиво", "a": "Антитіла", "al": "Antytila", "sc": "https://soundcloud.com/antytilaofficial/vsekrasivo", "start": 2.0},
+{"id": 1593440291, "t": "Шум", "a": "Go_A", "al": "Go_A"},
+{"id": 3318444311, "t": "З якого ти поверху неба?", "a": "Jerry Heil", "al": "Jerry Heil", "sc": "https://soundcloud.com/jerryheil-sc/z-yakogo-ti-poverxu-neba"},
+{"id": 136915866, "t": "Хто, як не ти?", "a": "Христина Соловій", "al": "Khrystyna Soloviy"},
+{"id": 1372489982, "t": "Додому", "a": "KALUSH", "al": "KALUSH"}
 ];
