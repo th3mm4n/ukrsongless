@@ -19,6 +19,9 @@ h1 span{display:inline-block;width:18px;height:12px;vertical-align:-1px;margin-r
 .tabs{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px}
 .tabs button{background:none;border:0;color:var(--muted);padding:7px 12px;border-radius:7px;font:inherit;font-size:13px;cursor:pointer}
 .tabs button.on{background:var(--blue);color:#fff}
+.langs{display:flex;justify-content:flex-end;margin:-8px 0 14px}
+.langs .tabs button{padding:4px 10px;font-size:12px}
+.streak{font-size:13px;margin-top:8px!important}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
 .player{display:flex;align-items:center;gap:14px}
 #play{flex:none;width:64px;height:64px;border-radius:50%;border:0;background:var(--yellow);color:#14203a;font-size:24px;cursor:pointer;display:grid;place-items:center}
@@ -74,6 +77,11 @@ h1 span{display:inline-block;width:18px;height:12px;vertical-align:-1px;margin-r
       <button id="tabFree">Безліміт</button>
     </div>
   </header>
+  <div class="langs"><div class="tabs">
+    <button id="langUa" class="on">Українські</button>
+    <button id="langRu">Російські</button>
+    <button id="langMix">Мікс</button>
+  </div></div>
 
   <div class="card">
     <div class="player">
@@ -105,6 +113,7 @@ h1 span{display:inline-block;width:18px;height:12px;vertical-align:-1px;margin-r
     <h2 id="rTitle"></h2>
     <p class="song" id="rSong"></p>
     <p id="rArtist"></p>
+    <p class="streak" id="rStreak"></p>
     <p><a id="rLinkSc" href="#" target="_blank" rel="noopener">SoundCloud</a><span id="rLinkSep"> · </span><a id="rLink" href="#" target="_blank" rel="noopener">Слухати на Deezer</a></p>
     <div class="row">
       <button class="btn" id="full">▶ 30 секунд повністю</button>
@@ -117,12 +126,13 @@ h1 span{display:inline-block;width:18px;height:12px;vertical-align:-1px;margin-r
   </div>
 
   <div class="foot">
-    <span id="count"></span> відомих українських пісень. Звук з SoundCloud (з початку пісні) або прев'ю з Deezer.<br>
+    <span id="count"></span> відомих пісень. Звук з SoundCloud (з початку пісні) або прев'ю з Deezer.<br>
     Потрібен інтернет. Щоденна пісня однакова для всіх у цей день.
   </div>
 </div>
 
 <script src="songs.js"></script>
+<script src="songs_ru.js"></script>
 <!-- SoundCloud Widget API. If it fails to load (offline, blocked), every song falls back to Deezer. -->
 <script src="https://w.soundcloud.com/player/api.js"></script>
 <script>
@@ -149,13 +159,19 @@ function norm(s){
     .replace(/ґ/g, "г").replace(/и|ї/g, "і").replace(/є/g, "е").replace(/ь/g, "")
     .replace(/[^a-z0-9а-яіе ]/g, " ").replace(/\s+/g, " ").trim();
 }
-SONGS.forEach(s => { s.key = norm(s.t + " " + s.a) + " | " + norm(s.al || "") + " | " + norm(translit(s.al || "")); });
+if (typeof SONGS_RU === "undefined") window.SONGS_RU = [];
+[...SONGS, ...SONGS_RU].forEach(s => { s.key = norm(s.t + " " + s.a) + " | " + norm(s.al || "") + " | " + norm(translit(s.al || "")); });
 
+/* language mode: "ua" (songs.js), "ru" (songs_ru.js) or "mix" (both). LIST is the active list. */
+let lang = "ua", LIST = SONGS;
+function listFor(l){ return l === "ru" ? SONGS_RU : l === "mix" ? SONGS.concat(SONGS_RU) : SONGS; }
+// stable song identity: SONGS_RU entries may have id null
+const sid = s => s ? (s.id != null ? String(s.id) : (s.sc || s.t + "|" + s.a)) : null;
 function search(q){
   q = q.trim(); if (!q) return [];
   const a = norm(q), b = norm(translit(q));
   const out = [];
-  for (const s of SONGS) {
+  for (const s of LIST) {
     if (s.key.includes(a) || s.key.includes(b)) out.push(s);
   }
   // titles starting with the query first, then alphabetical; show every match (the list scrolls),
@@ -273,10 +289,10 @@ function dayInfo(){
 }
 // Only songs with a SoundCloud link are picked as answers, so every clip starts at the beginning of the song.
 // Songs without one stay in SONGS for the guess search.
-const PLAYABLE = SONGS.filter(s => s.sc);
+let PLAYABLE = SONGS.filter(s => s.sc);
 function cycleOrder(cycle){
   const order = [];
-  for (let k = 0; k < SONGS.length; k++) {
+  for (let k = 0; k < LIST.length; k++) {
     const j = Math.floor(rng(DAILY_SEED ^ Math.imul(cycle + 1, 0x9E3779B1) ^ Math.imul(k + 1, 0x85EBCA77))() * (k + 1));
     if (j === k) order.push(k); else { order.push(order[j]); order[j] = k; }
   }
@@ -285,12 +301,12 @@ function cycleOrder(cycle){
 // The cycle's DAILY_CYCLE slots: slot i is order[i] if it has a SoundCloud link and was not among
 // the last DAILY_GAP days of the previous cycle; otherwise the next eligible song from the rest
 // of the order takes it. Positional, so a song gaining a link only changes its own slot.
-const DAILY_GAP = 60, cycleMemo = {};
+const DAILY_GAP = 60; let cycleMemo = {};
 function cycleSlots(cycle){
   if (cycleMemo[cycle]) return cycleMemo[cycle];
   const order = cycleOrder(cycle), n = Math.min(DAILY_CYCLE, order.length);
   const avoid = new Set(cycle > 0 ? cycleSlots(cycle - 1).slots.slice(-DAILY_GAP) : []);
-  const ok = k => SONGS[k].sc && !avoid.has(k);
+  const ok = k => LIST[k].sc && !avoid.has(k);
   const slots = order.slice(0, n), spare = new Set(order.slice(n).filter(ok));
   // each open slot takes the spare song with the highest per-(cycle, slot, song) score, so adding or
   // removing one candidate only changes the slot it would win
@@ -300,7 +316,7 @@ function cycleSlots(cycle){
     let best = -1, bs = -1;
     for (const k of spare) { const v = score(i, k); if (v > bs) { bs = v; best = k; } }
     if (best >= 0) { slots[i] = best; spare.delete(best); }
-    else { const any = order.find(k => SONGS[k].sc && !slots.includes(k)); if (any !== undefined) slots[i] = any; }
+    else { const any = order.find(k => LIST[k].sc && !slots.includes(k)); if (any !== undefined) slots[i] = any; }
   }
   return (cycleMemo[cycle] = { slots, spare: [...spare] });
 }
@@ -308,9 +324,9 @@ function cycleSlots(cycle){
 function dailySong(shift, dayIdx){
   if (dayIdx === undefined) dayIdx = dayInfo().dayIdx;
   const { slots, spare } = cycleSlots(Math.floor(dayIdx / DAILY_CYCLE)), pos = dayIdx % DAILY_CYCLE % slots.length;
-  if (!shift) return SONGS[slots[pos]];
-  const list = spare.length ? spare : PLAYABLE.map(s => SONGS.indexOf(s));
-  return SONGS[list[(pos * 7 + shift - 1) % list.length]];
+  if (!shift) return LIST[slots[pos]];
+  const list = spare.length ? spare : PLAYABLE.map(s => LIST.indexOf(s));
+  return LIST[list[(pos * 7 + shift - 1) % list.length]];
 }
 
 /* ---------- state ---------- */
@@ -323,7 +339,7 @@ const fmtSec = x => String(x).replace(".", ",");
 let scSt = { mode: "idle", startMs: 0, fromMs: 0, limit: 0, armed: false, seen: null, warmed: false, t: 0, at: 0 };
 
 function store(k, v){ try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
-const dailyKey = () => "ua-songless-daily-" + dayInfo().key;
+const dailyKey = () => "ua-songless-daily-" + (lang === "ua" ? "" : lang + "-") + dayInfo().key;
 
 function setStatus(msg, err){ const s = $("status"); s.textContent = msg; s.className = "status" + (err ? " err" : ""); }
 const stage = () => Math.min(guesses.length, MAX - 1);
@@ -362,9 +378,11 @@ function renderResult(){
   $("rTitle").textContent = won ? "Вгадано! 🎉" : "Не вийшло";
   $("rSong").textContent = target.t;
   $("rArtist").textContent = target.a;
-  $("rLink").href = "https://www.deezer.com/track/" + target.id;
+  $("rLink").href = target.id ? "https://www.deezer.com/track/" + target.id : "#";
   const sc = engine === "sc";
   $("rLinkSc").style.display = $("rLinkSep").style.display = sc ? "" : "none";
+  $("rLink").style.display = target.id ? "" : "none"; if (!target.id) $("rLinkSep").style.display = "none";
+  $("rStreak").textContent = streakText();
   $("rLinkSc").href = sc ? ((scSound && scSound.permalink_url) || target.sc) : "#";
   $("rLink").textContent = sc ? "Deezer" : "Слухати на Deezer";
   $("full").textContent = sc ? "▶ Уся пісня" : "▶ 30 секунд повністю";
@@ -471,9 +489,25 @@ $("full").onclick = () => {
 };
 
 /* ---------- game flow ---------- */
-function persist(){ if (mode === "daily") store(dailyKey(), { id: target && target.id, guesses, done, won, shift: dailyShift }); }
+function persist(){ if (mode === "daily") store(dailyKey(), { id: sid(target), guesses, done, won, shift: dailyShift, counted: dailyCounted }); }
 // finish() always runs from a click (guess or give up), so the reveal may start playing with sound.
-function finish(w){ done = true; won = w; stop(); setStatus(""); persist(); renderAll(); if (engine === "sc") scFull(true); }
+/* streaks, per language: daily = days in a row won, free = wins in a row */
+let dailyCounted = false;
+function streakText(){
+  const st = store("ua-songless-streak-" + lang) || {};
+  const d = st[mode] || {}; const ds = mode === "daily" ? "днів" : "перемог";
+  return "Серія: " + (d.cur || 0) + " " + ds + " поспіль · Рекорд: " + (d.best || 0);
+}
+function bumpStreak(w){
+  const key = "ua-songless-streak-" + lang, st = store(key) || {}, d = st[mode] || { cur: 0, best: 0 };
+  if (mode === "daily") {
+    if (dailyCounted) return; dailyCounted = true;
+    const today = dayInfo().dayIdx;
+    d.cur = w ? (d.last === today - 1 ? d.cur + 1 : 1) : 0; if (w) d.last = today;
+  } else d.cur = w ? d.cur + 1 : 0;
+  d.best = Math.max(d.best || 0, d.cur); st[mode] = d; store(key, st);
+}
+function finish(w){ bumpStreak(w); done = true; won = w; stop(); setStatus(""); persist(); renderAll(); if (engine === "sc") scFull(true); }
 function addGuess(g){
   guesses.push(g);
   if (g.right) { finish(true); return; }
@@ -489,7 +523,7 @@ function artistParts(s){ return (s.a + " & " + (s.al || "")).split(/\s*(?:&|,|\b
 function sameArtist(a, b){ const pb = artistParts(b); return artistParts(a).some(x => pb.includes(x)); }
 function submitGuess(){
   if (!selected || done) return;
-  const right = selected.id === target.id;
+  const right = sid(selected) === sid(target);
   addGuess({ label: selected.t + " — " + selected.a, right, artist: !right && sameArtist(selected, target) });
   selected = null; $("q").value = ""; $("submit").disabled = true; hideList();
 }
@@ -530,7 +564,8 @@ $("q").addEventListener("keydown", e => {
 /* share */
 $("share").onclick = async () => {
   const sq = guesses.map(g => g.right ? "🟩" : g.skip ? "⬛" : g.artist ? "🟨" : "🟥").join("");
-  const head = mode === "daily" ? "Впізнай пісню · " + dayInfo().key : "Впізнай пісню";
+  const tag = lang === "ru" ? " · RU" : lang === "mix" ? " · Мікс" : "";
+  const head = (mode === "daily" ? "Впізнай пісню · " + dayInfo().key : "Впізнай пісню") + tag;
   const txt = head + "\n" + (won ? guesses.length + "/" + MAX : "X/" + MAX) + " " + sq;
   let ok = false;
   try { await navigator.clipboard.writeText(txt); ok = true; } catch (e) {
@@ -546,18 +581,20 @@ async function startRound(){
   const rid = ++roundId;
   engine = null; scw = null; scSound = null; $("scBox").innerHTML = ""; $("scBox").classList.remove("show");
   previewUrl = null; newFrom = 0; $("play").disabled = true; setStatus("Завантаження фрагмента…");
+  if (!PLAYABLE.length) { target = null; setStatus("У цьому режимі ще немає пісень з SoundCloud. Спробуй інший."); return; }
   if (mode === "daily") {
     const saved = store(dailyKey());
     dailyShift = (saved && saved.shift) || 0;
     target = dailySong(dailyShift);
     // Saved guesses only count if they were for this exact song (the list may have changed since).
-    const sameSong = saved && saved.id === target.id;
+    const sameSong = saved && String(saved.id) === sid(target);
+    dailyCounted = !!(sameSong && saved.counted);
     guesses = sameSong && saved.guesses ? saved.guesses : []; done = !!(sameSong && saved.done); won = !!(sameSong && saved.won);
   } else {
-    let pool = PLAYABLE.filter(s => !recent.includes(s.id));
+    let pool = PLAYABLE.filter(s => !recent.includes(sid(s)));
     if (!pool.length) { recent = []; pool = PLAYABLE; }
     target = pool[Math.floor(Math.random() * pool.length)];
-    recent.push(target.id); if (recent.length > 30) recent.shift();
+    recent.push(sid(target)); if (recent.length > 30) recent.shift();
     guesses = []; done = false; won = false;
   }
   renderAll();
@@ -588,12 +625,22 @@ function setMode(m){
   mode = m; $("tabDaily").classList.toggle("on", m === "daily"); $("tabFree").classList.toggle("on", m === "free");
   startRound();
 }
+function setLang(l){
+  lang = l; LIST = listFor(l); PLAYABLE = LIST.filter(s => s.sc); cycleMemo = {}; recent = [];
+  store("ua-songless-lang", l);
+  ["Ua", "Ru", "Mix"].forEach(x => $("lang" + x).classList.toggle("on", x.toLowerCase() === l));
+  $("count").textContent = LIST.length;
+  startRound();
+}
+$("langUa").onclick = () => lang !== "ua" && setLang("ua");
+$("langRu").onclick = () => lang !== "ru" && setLang("ru");
+$("langMix").onclick = () => lang !== "mix" && setLang("mix");
 $("tabDaily").onclick = () => mode !== "daily" && setMode("daily");
 $("tabFree").onclick = () => mode !== "free" && setMode("free");
 audio.addEventListener("ended", stop);
 
-$("count").textContent = SONGS.length;
-startRound();
+const savedLang = store("ua-songless-lang");
+if (savedLang === "ru" || savedLang === "mix") setLang(savedLang); else { $("count").textContent = SONGS.length; startRound(); }
 </script>
 </body>
 </html>
