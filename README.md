@@ -59,7 +59,7 @@ Files:
 | `tools/find_song.py` | Search Deezer, print paste-ready `songs.js` lines. |
 | `tools/verify_songs.py` | Check every song still resolves with a Deezer preview. |
 | `tools/verify_sc.py` | Check every `sc` link in headless Chrome: loads, full track (not a 30s snip), length vs Deezer, and a 1s play for non-DRM tracks. Needs Playwright. |
-| `songs_ru.js`, `songs_en.js` | Russian- and English-language songs (`SONGS_RU`, `SONGS_EN`), same format as `songs.js`. **Not loaded by the game.** Stored for a planned language mode: Ukrainian, Russian, English or a mix. `id` is null for the few tracks not on Deezer; no SoundCloud links yet. |
+| `songs_ru.js`, `songs_en.js` | Russian- and English-language songs by non-Ukrainian artists (`SONGS_RU`, `SONGS_EN`), same format as `songs.js`. `songs_ru.js` is loaded for the language selector (Російські / Мікс); `songs_en.js` is not loaded yet. `id` is null for the few tracks not on Deezer; no SoundCloud links yet. |
 | `tools/find_sc.py` | Find SoundCloud tracks for songs without `sc`, following the picking rules, and audio-match non-DRM candidates to the Deezer recording. Writes a JSON report; `--apply` adds the picks to `songs.js`. Needs Playwright, numpy, ffmpeg. |
 | `tools/sc_check.html` | Open in a real browser: plays the first second of every `sc` track (cold and buffered) and reports timing. The only way to verify DRM tracks. |
 
@@ -244,7 +244,7 @@ Tips for finding things on Deezer:
 Rules we used:
 - The bar is "most Ukrainians would recognise it", not "good song".
 - A mix of decades and genres: classics and folk, 90s rock, 2000s pop, Eurovision, recent hits.
-- Ukrainian language preferred. Skip Russian-language songs by Ukrainian artists.
+- Ukrainian artists, any language (Tim, Nov 24: Стрыкало, Потап и Настя, MOZGI etc. belong in the game even when they sing in Russian). Ёлка counts as Ukrainian; ВИА Гра, Лолита, Ярослав Евдокимов do not.
 - Duplicated titles are fine (e.g. two songs called "Люди"), the autocomplete shows the artist next to the title.
 - Aim for a list large enough that the daily mode does not repeat quickly. Each 100-day daily cycle draws 100 songs without repeats, so a larger list means songs come back less often.
 
@@ -315,7 +315,11 @@ This repo is built to be worked on with Claude (Claude Code or Claude chat). Con
 - [x] Real-browser check of the 105 SoundCloud links from the Spotify import: all 105 played in desktop Chrome (Nov 24). Note: checking many links in a row makes SoundCloud throttle for a while (a block of consecutive "did not play"); re-run only the failures a few minutes later before concluding a link is broken.
 - [x] Silent-intro `start` offsets measured for the 68 non-DRM links of that import (21 set). DRM tracks cannot be measured in the sandbox.
 - [x] Fixed: DZIDZIO Павук/Ялта were gachi "right version" mashups (Павук replaced, Ялта has no normal upload), Wellboy Вишні was the New Year version (replaced).
-- [ ] Language mode: let the player choose Ukrainian, Russian, English or a mix (data is ready in `songs_ru.js` and `songs_en.js`; add SoundCloud links with `tools/find_sc.py` first)
+- [x] Moved 74 Russian-language songs by Ukrainian artists from `songs_ru.js` into the game (Nov 24): Стрыкало 19, 5'nizza 15, Потап и Настя 8, MOZGI 7, Время и Стекло 6, Сердючка 5, MONATIK 5, Дорн 2, Ицык Цыпер 2, Ёлка 2, Бумбокс, Антитіла, NK, Bahroma. 73 have SoundCloud links (Ёлка - Прованс: none found), 14 got `start` offsets. Потап и Настя - На раёне and KYIVSTONER - Leto are not on Deezer and stay in `songs_ru.js` for now.
+- [x] Checks for those 73 links (Nov 24): `verify_songs.py` 349/349 OK; all 24 DRM links and 24 others played in desktop Chrome; the remaining 25 non-DRM links were not played in Chrome (SoundCloud throttled after ~5 plays in a row, about 10 min per block) but their full streams were downloaded and decoded in the sandbox for the silent-intro check.
+- [x] Language mode (Nov 28): selector Українські / Російські / Мікс under the header. RU songs get SoundCloud links via `tools/find_sc.py --file songs_ru.js`; only songs with a link are answers.
+- [x] Streaks (Nov 28): per language, daily = days won in a row, unlimited = wins in a row, shown on the result card.
+- [ ] English mode (`songs_en.js`, needs SoundCloud links).
 - [x] Removed on request (Nov 2026): Wild Dances, 1944, Фортеця Бахмут, Heart of Steel, Gravity, Under the Ladder, Чуєш мамо, Стожари, Прірва. Do not re-add them.
 - [x] First 15 songs migrated to SoundCloud: Вставай, Обійми, Люди як кораблі, Вахтерам, Червона рута, Щедрик, Stefania, Shum, Wild Dances, 1944, Плакала, Човен, Весна, Журавлі, Dancing Lasha Tumbai
   - Official uploads: 11 (Shum is Go_A's official radio edit, 183s, not the 172s Eurovision cut, which is a 30s snip on SoundCloud. Щедрик is the official Хор Гомін recording, not the Viter recording that Deezer has.)
